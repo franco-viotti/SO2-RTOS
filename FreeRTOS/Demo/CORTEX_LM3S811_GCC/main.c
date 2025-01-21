@@ -79,6 +79,9 @@
 #include "semtest.h"
 #include "BlockQ.h"
 
+/* My app includes */
+#include "sensor_task.h"
+
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
 
@@ -105,24 +108,6 @@ efficient. */
  */
 static void prvSetupHardware( void );
 
-/*
- * The 'check' task, as described at the top of this file.
- */
-static void vCheckTask( void *pvParameters );
-
-/*
- * The task that is woken by the ISR that processes GPIO interrupts originating
- * from the push button.
- */
-static void vButtonHandlerTask( void *pvParameters );
-
-/*
- * The task that controls access to the LCD.
- */
-static void vPrintTask( void *pvParameter );
-
-/* String that is transmitted on the UART. */
-static char *cMessage = "Task woken by button interrupt! --- ";
 static volatile char *pcNextChar;
 
 /* The semaphore used to wake the button handler task from within the GPIO
@@ -131,6 +116,10 @@ SemaphoreHandle_t xButtonSemaphore;
 
 /* The queue used to send strings to the print task for display on the LCD. */
 QueueHandle_t xPrintQueue;
+
+// Variables globales
+// Cola para enviar los valores generados por el sensor al filtro
+QueueHandle_t xTemperatureQueue;
 
 /*-----------------------------------------------------------*/
 
@@ -153,16 +142,8 @@ int main( void )
 	/* Create the queue used to pass message to vPrintTask. */
 	xPrintQueue = xQueueCreate( mainQUEUE_SIZE, sizeof( char * ) );
 
-	/* Start the standard demo tasks. */
-	vStartIntegerMathTasks( tskIDLE_PRIORITY );
-	vStartPolledQueueTasks( mainQUEUE_POLL_PRIORITY );
-	vStartSemaphoreTasks( mainSEM_TEST_PRIORITY );
-	vStartBlockingQueueTasks( mainBLOCK_Q_PRIORITY );
-
-	/* Start the tasks defined within the file. */
-	xTaskCreate( vCheckTask, "Check", configMINIMAL_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
-	xTaskCreate( vButtonHandlerTask, "Status", configMINIMAL_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY + 1, NULL );
-	xTaskCreate( vPrintTask, "Print", configMINIMAL_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY - 1, NULL );
+  /* Start my tasks */
+  vStartSensorTask();
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
@@ -171,73 +152,6 @@ int main( void )
 	scheduler. */
 
 	return 0;
-}
-/*-----------------------------------------------------------*/
-
-static void vCheckTask( void *pvParameters )
-{
-  // Inicializaciones
-  portBASE_TYPE xErrorOccurred = pdFALSE; // Variable portable que indica si hubo error
-  TickType_t xLastExecutionTime; // Para controlar el tiempo entre ejecuciones
-  const char *pcPassMessage = "PASS"; // Mensaje que se muestra si no hay errores
-  const char *pcFailMessage = "FAIL"; // Mensaje que se muestra si hay errores
-
-	/* Initialise xLastExecutionTime so the first call to vTaskDelayUntil()
-	works correctly. */
-  // Obtiene el tiempo actual para referencia
-	xLastExecutionTime = xTaskGetTickCount();
-
-	for( ;; ) // Loop infinito
-	{
-		/* Perform this check every mainCHECK_DELAY milliseconds. */
-    // Espera hasta el proximo periodo (5 segundos)
-		vTaskDelayUntil( &xLastExecutionTime, mainCHECK_DELAY );
-
-		/* Has an error been found in any task? */
-
-    // Verifica si alguna tarea ha fallado    
-    if( xAreIntegerMathsTaskStillRunning() != pdTRUE )
-		{
-			xErrorOccurred = pdTRUE;
-		}
-
-		if( xArePollingQueuesStillRunning() != pdTRUE )
-		{
-			xErrorOccurred = pdTRUE;
-		}
-
-		if( xAreSemaphoreTasksStillRunning() != pdTRUE )
-		{
-			xErrorOccurred = pdTRUE;
-		}
-
-		if( xAreBlockingQueuesStillRunning() != pdTRUE )
-		{
-			xErrorOccurred = pdTRUE;
-		}
-
-		/* Send either a pass or fail message.  If an error is found it is
-		never cleared again.  We do not write directly to the LCD, but instead
-		queue a message for display by the print task. */
-		if( xErrorOccurred == pdTRUE )
-		{
-			xQueueSend( xPrintQueue, &pcFailMessage, portMAX_DELAY );
-		}
-		else
-		{
-			xQueueSend( xPrintQueue, &pcPassMessage, portMAX_DELAY );
-		}
-
-    vTaskDelayUntil(&xLastExecutionTime, mainCHECK_DELAY);
-
-    // Agregar mensaje periódico por UART
-    UARTCharPut(UART0_BASE, 'T');
-    UARTCharPut(UART0_BASE, 'i');
-    UARTCharPut(UART0_BASE, 'c');
-    UARTCharPut(UART0_BASE, 'k');
-    UARTCharPut(UART0_BASE, '\n');
-
-	}
 }
 /*-----------------------------------------------------------*/
 
@@ -279,71 +193,10 @@ static void prvSetupHardware( void )
 
 
 	/* Initialise the LCD> */
-    OSRAMInit( false );
-    OSRAMStringDraw("www.FreeRTOS.org", 0, 0);
+  OSRAMInit( false );
+  OSRAMStringDraw("www.FreeRTOS.org", 0, 0);
 	OSRAMStringDraw("LM3S811 demo", 16, 1);
 }
-/*-----------------------------------------------------------*/
-
-static void vButtonHandlerTask( void *pvParameters )
-{
-  const char *pcInterruptMessage = "Int";
-
-	for( ;; )
-	{
-		/* Wait for a GPIO interrupt to wake this task. */
-		/* Intenta tomar el semaforo xButtonSemaphore */
-    /* portMAX_DELAY significa que esperara indefinidamente hasta que el semaforo este disponible */
-    /* Retorna pdPASS si logro tomar el semaforo, pdFAIL si hubo un error */
-    /* Sale del while si logra obtener el semaforo */
-    while( xSemaphoreTake( xButtonSemaphore, portMAX_DELAY ) != pdPASS );
-
-		/* Start the Tx of the message on the UART. */
-    /* 1. Inicia la transmision por UART */
-    // Desabilita las interrupciones del UART temporalmente
-		UARTIntDisable( UART0_BASE, UART_INT_TX );
-		{
-			// Apunta al inicio del mensaje largo
-      pcNextChar = cMessage; // "Task woken by button interrupt! --- "
-
- 			// Verifica si el UART esta listo para transmitir
-      // HWREG accede directamente al registro del hardware
-      // UART_O_FR es el registro de banderas
-      // UART_FR_TXFF indica si la FIFO de transmision esta llena
-			if( !( HWREG( UART0_BASE + UART_O_FR ) & UART_FR_TXFF ) )
-			{
-				// Envia el primer caracter al registro de datos del UART
-        HWREG( UART0_BASE + UART_O_DR ) = *pcNextChar;
-			}
-
-			// Avanza al siguiente caracter
-      pcNextChar++;
-		}
-		
-    // Rehabilita las interrupciones del UART
-    // El resto del mensaje sera enviado por la ISR del UART
-    // Cuando UART termina de enviar un caracter, genera una interrupcion de transmision (TX)
-    // Esta interrupcion activa la ISR del UART (vUART_ISR)
-    // ISR envia una caracter, por ejemplo 'a'. Cuando UART termina de enviar 'a', genera una interrupcion
-    // Y asi sucesivamente asta que encuentra el '\0' que indica el fin del mensaje
-    UARTIntEnable(UART0_BASE, UART_INT_TX);
-
-		/* Queue a message for the print task to display on the LCD. */
-    /* 2. Envía mensaje "Int" al LCD a través de la cola */
-    // &pcInterruptMessage: puntero al mensaje
-    // portMAX_DELAY: espera indefinidamente si la cola esta lena
-		xQueueSend( xPrintQueue, &pcInterruptMessage, portMAX_DELAY );
-
-		/* Make sure we don't process bounces. */
-    /* 3. Manejo de rebotes: espera 150ms */
-		vTaskDelay( mainDEBOUNCE_DELAY );
-		
-    // Intenta tomar el semaforo sin esperar (mainNO_DELAY = 0)
-    // Esto limpia cualquier pulsacion extra durante el periodo de rebote
-    xSemaphoreTake( xButtonSemaphore, mainNO_DELAY );
-	}
-}
-
 /*-----------------------------------------------------------*/
 
 void vUART_ISR(void)
@@ -392,23 +245,3 @@ void vGPIO_ISR( void )
   /* 2. El cambio se realizará cuando se salga de la ISR */
   portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
 }
-/*-----------------------------------------------------------*/
-
-static void vPrintTask( void *pvParameters )
-{
-char *pcMessage;
-unsigned portBASE_TYPE uxLine = 0, uxRow = 0;
-
-	for( ;; )
-	{
-		/* Wait for a message to arrive. */
-		xQueueReceive( xPrintQueue, &pcMessage, portMAX_DELAY );
-
-		/* Write the message to the LCD. */
-		uxRow++;
-		uxLine++;
-		OSRAMClear();
-		OSRAMStringDraw( pcMessage, uxLine & 0x3f, uxRow & 0x01);
-	}
-}
-
