@@ -141,6 +141,12 @@ int main( void )
 
 	/* Create the semaphore used to wake the button handler task from the GPIO
 	ISR. */
+  /* Crea un semaforo binario para el manejo del boton */
+  /* El semaforo se crea estando disponible (1) */
+  /* Inmediatamente se toma desde el main (0) */
+  /* Esto nos permite que la tarea del boton se bloquee esperando el semaforo */
+  /* Cuando hay una interrupcion provocada por la accion fisica del boton, el semaforo se pondra en (1) */
+  /* La tarea del boton se desbloqueara y podra ejecutarse */
 	vSemaphoreCreateBinary( xButtonSemaphore );
 	xSemaphoreTake( xButtonSemaphore, 0 );
 
@@ -170,23 +176,27 @@ int main( void )
 
 static void vCheckTask( void *pvParameters )
 {
-portBASE_TYPE xErrorOccurred = pdFALSE;
-TickType_t xLastExecutionTime;
-const char *pcPassMessage = "PASS";
-const char *pcFailMessage = "FAIL";
+  // Inicializaciones
+  portBASE_TYPE xErrorOccurred = pdFALSE; // Variable portable que indica si hubo error
+  TickType_t xLastExecutionTime; // Para controlar el tiempo entre ejecuciones
+  const char *pcPassMessage = "PASS"; // Mensaje que se muestra si no hay errores
+  const char *pcFailMessage = "FAIL"; // Mensaje que se muestra si hay errores
 
 	/* Initialise xLastExecutionTime so the first call to vTaskDelayUntil()
 	works correctly. */
+  // Obtiene el tiempo actual para referencia
 	xLastExecutionTime = xTaskGetTickCount();
 
-	for( ;; )
+	for( ;; ) // Loop infinito
 	{
 		/* Perform this check every mainCHECK_DELAY milliseconds. */
+    // Espera hasta el proximo periodo (5 segundos)
 		vTaskDelayUntil( &xLastExecutionTime, mainCHECK_DELAY );
 
 		/* Has an error been found in any task? */
 
-		if( xAreIntegerMathsTaskStillRunning() != pdTRUE )
+    // Verifica si alguna tarea ha fallado    
+    if( xAreIntegerMathsTaskStillRunning() != pdTRUE )
 		{
 			xErrorOccurred = pdTRUE;
 		}
@@ -217,34 +227,45 @@ const char *pcFailMessage = "FAIL";
 		{
 			xQueueSend( xPrintQueue, &pcPassMessage, portMAX_DELAY );
 		}
+
+    vTaskDelayUntil(&xLastExecutionTime, mainCHECK_DELAY);
+
+    // Agregar mensaje periódico por UART
+    UARTCharPut(UART0_BASE, 'T');
+    UARTCharPut(UART0_BASE, 'i');
+    UARTCharPut(UART0_BASE, 'c');
+    UARTCharPut(UART0_BASE, 'k');
+    UARTCharPut(UART0_BASE, '\n');
+
 	}
 }
 /*-----------------------------------------------------------*/
 
 static void prvSetupHardware( void )
 {
-	/* Setup the PLL. */
+	// Configura el PLL (Phase-Locked Loop) para el reloj del sistema
+  // SYSCTL_SYSDIV_10: Divide el reloj del sistema por 10
+  // SYSCTL_USE_PLL: Selecciona el PLL como fuente de reloj
+  // SYSCTL_OSC_MAIN: Selecciona el oscilador principal como fuente de reloj
+  // SYSCTL_XTAL_6MHZ: Selecciona un cristal de 6MHz
 	SysCtlClockSet( SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_6MHZ );
 
-	/* Setup the push button. */
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-    GPIODirModeSet(GPIO_PORTC_BASE, mainPUSH_BUTTON, GPIO_DIR_MODE_IN);
-	GPIOIntTypeSet( GPIO_PORTC_BASE, mainPUSH_BUTTON,GPIO_FALLING_EDGE );
-	IntPrioritySet( INT_GPIOC, configKERNEL_INTERRUPT_PRIORITY );
-	GPIOPinIntEnable( GPIO_PORTC_BASE, mainPUSH_BUTTON );
-	IntEnable( INT_GPIOC );
+	// Configura el botón
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC); // Habilita GPIO Puerto C
+  GPIODirModeSet(GPIO_PORTC_BASE, mainPUSH_BUTTON, GPIO_DIR_MODE_IN); // Pin como entrada
+	GPIOIntTypeSet( GPIO_PORTC_BASE, mainPUSH_BUTTON,GPIO_FALLING_EDGE ); // Interrupcion en flanco descendente
+	IntPrioritySet( INT_GPIOC, configKERNEL_INTERRUPT_PRIORITY ); // Configura prioridad
+	GPIOPinIntEnable( GPIO_PORTC_BASE, mainPUSH_BUTTON ); // Habilita interrupcion
+	IntEnable( INT_GPIOC ); // Habilita interrupciones del puerto C
 
+ 	// Configura el UART
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0); // Habilita el UART0
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); // Habilita el GPIO Puerto A
 
-
-	/* Enable the UART.  */
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-
-	/* Set GPIO A0 and A1 as peripheral function.  They are used to output the
-	UART signals. */
+  // Configura pines A0 y A1 para UART
 	GPIODirModeSet( GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_DIR_MODE_HW );
 
-	/* Configure the UART for 8-N-1 operation. */
+	// Configura UART: 19233 baudios, 8 bits, sin paridad, 1 bit de parada
 	UARTConfigSet( UART0_BASE, mainBAUD_RATE, UART_CONFIG_WLEN_8 | UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE );
 
 	/* We don't want to use the fifo.  This is for test purposes to generate
@@ -266,34 +287,60 @@ static void prvSetupHardware( void )
 
 static void vButtonHandlerTask( void *pvParameters )
 {
-const char *pcInterruptMessage = "Int";
+  const char *pcInterruptMessage = "Int";
 
 	for( ;; )
 	{
 		/* Wait for a GPIO interrupt to wake this task. */
-		while( xSemaphoreTake( xButtonSemaphore, portMAX_DELAY ) != pdPASS );
+		/* Intenta tomar el semaforo xButtonSemaphore */
+    /* portMAX_DELAY significa que esperara indefinidamente hasta que el semaforo este disponible */
+    /* Retorna pdPASS si logro tomar el semaforo, pdFAIL si hubo un error */
+    /* Sale del while si logra obtener el semaforo */
+    while( xSemaphoreTake( xButtonSemaphore, portMAX_DELAY ) != pdPASS );
 
 		/* Start the Tx of the message on the UART. */
+    /* 1. Inicia la transmision por UART */
+    // Desabilita las interrupciones del UART temporalmente
 		UARTIntDisable( UART0_BASE, UART_INT_TX );
 		{
-			pcNextChar = cMessage;
+			// Apunta al inicio del mensaje largo
+      pcNextChar = cMessage; // "Task woken by button interrupt! --- "
 
-			/* Send the first character. */
+ 			// Verifica si el UART esta listo para transmitir
+      // HWREG accede directamente al registro del hardware
+      // UART_O_FR es el registro de banderas
+      // UART_FR_TXFF indica si la FIFO de transmision esta llena
 			if( !( HWREG( UART0_BASE + UART_O_FR ) & UART_FR_TXFF ) )
 			{
-				HWREG( UART0_BASE + UART_O_DR ) = *pcNextChar;
+				// Envia el primer caracter al registro de datos del UART
+        HWREG( UART0_BASE + UART_O_DR ) = *pcNextChar;
 			}
 
-			pcNextChar++;
+			// Avanza al siguiente caracter
+      pcNextChar++;
 		}
-		UARTIntEnable(UART0_BASE, UART_INT_TX);
+		
+    // Rehabilita las interrupciones del UART
+    // El resto del mensaje sera enviado por la ISR del UART
+    // Cuando UART termina de enviar un caracter, genera una interrupcion de transmision (TX)
+    // Esta interrupcion activa la ISR del UART (vUART_ISR)
+    // ISR envia una caracter, por ejemplo 'a'. Cuando UART termina de enviar 'a', genera una interrupcion
+    // Y asi sucesivamente asta que encuentra el '\0' que indica el fin del mensaje
+    UARTIntEnable(UART0_BASE, UART_INT_TX);
 
 		/* Queue a message for the print task to display on the LCD. */
+    /* 2. Envía mensaje "Int" al LCD a través de la cola */
+    // &pcInterruptMessage: puntero al mensaje
+    // portMAX_DELAY: espera indefinidamente si la cola esta lena
 		xQueueSend( xPrintQueue, &pcInterruptMessage, portMAX_DELAY );
 
 		/* Make sure we don't process bounces. */
+    /* 3. Manejo de rebotes: espera 150ms */
 		vTaskDelay( mainDEBOUNCE_DELAY );
-		xSemaphoreTake( xButtonSemaphore, mainNO_DELAY );
+		
+    // Intenta tomar el semaforo sin esperar (mainNO_DELAY = 0)
+    // Esto limpia cualquier pulsacion extra durante el periodo de rebote
+    xSemaphoreTake( xButtonSemaphore, mainNO_DELAY );
 	}
 }
 
@@ -327,15 +374,23 @@ unsigned long ulStatus;
 
 void vGPIO_ISR( void )
 {
-portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+  /* Variable para indicar si se desperto una tarea de mayor prioridad */
+  portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
-	/* Clear the interrupt. */
+	/* Limpia la bandera de interrupcion del boton */
 	GPIOPinIntClear(GPIO_PORTC_BASE, mainPUSH_BUTTON);
 
-	/* Wake the button handler task. */
+	/* Da el semaforo desde la ISR */
+  /* Si hay una tarea de mayor prioridad esperando el semaforo, cambia */
+  /* xHigherPriorityTaskWoken a pdTRUE */
+  /* La funcion xSemaphoreGiveFromISR se usa para liberar un semaforo desde una ISR */
 	xSemaphoreGiveFromISR( xButtonSemaphore, &xHigherPriorityTaskWoken );
 
-	portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
+	/* Si se desperto una tarea de mayor prioridad, realiza el cambio de contexto */
+  /* Si xHigherPriorityTaskWoken es pdTRUE: */
+  /* 1. Dispara PendSV para realizar el cambio de contexto */
+  /* 2. El cambio se realizará cuando se salga de la ISR */
+  portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
 }
 /*-----------------------------------------------------------*/
 

@@ -200,20 +200,29 @@ static void vPolledQueueConsumer( void * pvParameters )
 /* This is called to check that all the created tasks are still running with no errors. */
 portBASE_TYPE xArePollingQueuesStillRunning( void )
 {
-    static short sLastPollingConsumerCount = 0, sLastPollingProducerCount = 0;
+    // Variables estaticas que mantienen el ultimo conteo conocido
+    // Las variables estaticas en C retienen su valor entre llamadas a la funcion
+    // y su ambito esta limitado a la funcion donde se declaran. Es decir, que solo
+    // son accesibles dentro de esa funcion y existen durante toda la vida del programa
+    static short sLastPollingConsumerCount = 0; // Ultimo conteo del consumidor
+    static short sLastPollingProducerCount = 0; // Ultimo conteo del productor
     portBASE_TYPE xReturn;
 
+    // Compara si los contadores actuales son iguales a los ultimos contadores guardados
     if( ( sLastPollingConsumerCount == sPollingConsumerCount ) ||
         ( sLastPollingProducerCount == sPollingProducerCount )
         )
     {
+        // Si algun contador no cambio, significa que la tarea se detuvo
         xReturn = pdFALSE;
     }
     else
     {
+        // Si ambos contadores cambiaron, las tareas estan funcionando
         xReturn = pdTRUE;
     }
 
+    // Actualiza los valores guardados para la proxima comparacion
     sLastPollingConsumerCount = sPollingConsumerCount;
     sLastPollingProducerCount = sPollingProducerCount;
 
