@@ -82,6 +82,7 @@
 /* My app includes */
 #include "sensor_task.h"
 #include "utils.h"
+#include "filter_task.h"
 
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
@@ -153,6 +154,7 @@ int main( void )
 
   /* Start my tasks */
   vStartSensorTask();
+  vStartFilterTask();
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
