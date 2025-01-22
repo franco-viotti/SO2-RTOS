@@ -3,10 +3,13 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"
+#include "utils.h"
 
 // Tamaño default del filtro
 #define FILTER_N_DEFAULT   10
+
+extern QueueHandle_t xTemperatureQueue;
+extern QueueHandle_t xFilteredTempQueue;
 
 // Función para crear la tarea
 void vStartFilterTask(void);

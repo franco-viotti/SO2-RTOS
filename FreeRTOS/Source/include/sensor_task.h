@@ -4,13 +4,11 @@
 // Includes de FreeRTOS
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"
+#include "utils.h"
 
 // Definiciones
-#define SENSOR_FREQ_HZ    10
+#define SENSOR_FREQ_HZ    1//0 // TODO: add cero back
 #define SENSOR_PERIOD_MS  (1000 / SENSOR_FREQ_HZ)
-#define TEMP_MIN          0 //.0f // temperatura mínima en grados Celsius
-#define TEMP_MAX          30 //.0f // temperatura máxima en grados Celsius
 
 // La declaración externa de la cola permite que sensor_task.c pueda usar la cola
 // que está definida en main.c

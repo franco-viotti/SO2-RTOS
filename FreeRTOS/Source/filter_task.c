@@ -1,17 +1,16 @@
 #include "filter_task.h"
-#include "utils.h"
 
 // Buffer circular para las muestras
 static int samples[FILTER_N_DEFAULT];
 static int currentIndex = 0;
 
-extern QueueHandle_t xTemperatureQueue;
-
 static void vFilterTask(void *pvParameters)
 {
   int newTemp, sum, average;
+  TempData_t filteredData;
   char str[10];
   int samplesCount = 0;  // Contador de muestras recibidas
+  TickType_t startTime = xTaskGetTickCount();  // Tiempo inicial
 
   // Inicializar el buffer con ceros
   for(int i = 0; i < FILTER_N_DEFAULT; i++)
@@ -23,10 +22,6 @@ static void vFilterTask(void *pvParameters)
   {
     if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS)
     {
-      UARTSend("Recibido de cola: ");
-      int_to_string(newTemp, str);
-      UARTSend(str);
-      UARTSend("°C\r\n");
       // Actualizar buffer circular
       samples[currentIndex] = newTemp;
       currentIndex = (currentIndex + 1) % FILTER_N_DEFAULT;
@@ -41,6 +36,16 @@ static void vFilterTask(void *pvParameters)
       }
       int average = sum/samplesCount;
 
+      // Preparar dato filtrado con timestamp actual
+      filteredData.temperature = average;
+      filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
+
+      // Enviar a display
+      if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
+      {
+        UARTSendError("Fallo al enviar a cola");
+      }
+
       // Mostrar resultado
       UARTSend("Filtrado (");
       int_to_string(samplesCount, str);
@@ -49,6 +54,10 @@ static void vFilterTask(void *pvParameters)
       int_to_string(average, str);
       UARTSend(str);
       UARTSend("°C\r\n");
+    }
+    else
+    {
+      UARTSendError("Error al recibir de la cola del sensor");
     }
   }
 }

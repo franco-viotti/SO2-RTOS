@@ -1,6 +1,6 @@
 #include "sensor_task.h"
-#include <stdlib.h>  // para rand()
 #include "utils.h"
+#include <stdlib.h>
 
 // Función que simula la lectura de un sensor de temperatura
 static void vSensorTask(void *pvParameters)
