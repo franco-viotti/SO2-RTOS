@@ -81,6 +81,7 @@
 
 /* My app includes */
 #include "sensor_task.h"
+#include "utils.h"
 
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
@@ -139,6 +140,14 @@ int main( void )
 	vSemaphoreCreateBinary( xButtonSemaphore );
 	xSemaphoreTake( xButtonSemaphore, 0 );
 
+  /* Crear la cola del sensor y filtro pasa bajos antes de iniciar las tareas */
+  xTemperatureQueue = xQueueCreate( 1, sizeof(int) );
+  if (xTemperatureQueue == NULL)
+  {
+    UARTSendError("Error al crear la cola del sensor");
+    while(1); // No podemos continuar
+  }
+
 	/* Create the queue used to pass message to vPrintTask. */
 	xPrintQueue = xQueueCreate( mainQUEUE_SIZE, sizeof( char * ) );
 
@@ -150,6 +159,7 @@ int main( void )
 
 	/* Will only get here if there was insufficient heap to start the
 	scheduler. */
+  UARTSendError("Error al iniciar el scheduler"); // No deberiamos llegar aqui
 
 	return 0;
 }
