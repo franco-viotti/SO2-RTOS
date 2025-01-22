@@ -80,9 +80,10 @@
 #include "BlockQ.h"
 
 /* My app includes */
-#include "sensor_task.h"
 #include "utils.h"
+#include "sensor_task.h"
 #include "filter_task.h"
+#include "display_task.h"
 
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
@@ -121,7 +122,8 @@ QueueHandle_t xPrintQueue;
 
 // Variables globales
 // Cola para enviar los valores generados por el sensor al filtro
-QueueHandle_t xTemperatureQueue;
+QueueHandle_t xTemperatureQueue;  // Cola sensor -> filtro
+QueueHandle_t xFilteredTempQueue; // Cola filtro -> display
 
 /*-----------------------------------------------------------*/
 
@@ -141,9 +143,11 @@ int main( void )
 	vSemaphoreCreateBinary( xButtonSemaphore );
 	xSemaphoreTake( xButtonSemaphore, 0 );
 
-  /* Crear la cola del sensor y filtro pasa bajos antes de iniciar las tareas */
+  /* Crear la cola del sensor al filtro pasa bajos */
   xTemperatureQueue = xQueueCreate( 1, sizeof(int) );
-  if (xTemperatureQueue == NULL)
+  /* Crear la cola del filtro al display */
+  xFilteredTempQueue = xQueueCreate(10, sizeof(TempData_t));
+  if (xTemperatureQueue == NULL || xFilteredTempQueue == NULL)
   {
     UARTSendError("Error al crear la cola del sensor");
     while(1); // No podemos continuar
@@ -155,6 +159,7 @@ int main( void )
   /* Start my tasks */
   vStartSensorTask();
   vStartFilterTask();
+  vStartDisplayTask();
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();

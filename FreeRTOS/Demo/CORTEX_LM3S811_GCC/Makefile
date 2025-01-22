@@ -42,7 +42,8 @@ OBJS=${COMPILER}/main.o	\
     ${COMPILER}/sensor_task.o \
     ${COMPILER}/syscalls.o \
     ${COMPILER}/utils.o \
-    ${COMPILER}/filter_task.o
+    ${COMPILER}/filter_task.o \
+    ${COMPILER}/display_task.o
 
 INIT_OBJS= ${COMPILER}/startup.o
 
