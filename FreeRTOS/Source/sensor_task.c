@@ -2,15 +2,6 @@
 #include <stdlib.h>  // para rand()
 #include "utils.h"
 
-// Función para convertir int a string
-static void int_to_string(int value, char* str) 
-{
-  // Para números de dos dígitos (TEMP_MIN-TEMP_MAX)
-  str[0] = '0' + (value / 10);
-  str[1] = '0' + (value % 10);
-  str[2] = '\0';
-}
-
 // Función que simula la lectura de un sensor de temperatura
 static void vSensorTask(void *pvParameters)
 {
