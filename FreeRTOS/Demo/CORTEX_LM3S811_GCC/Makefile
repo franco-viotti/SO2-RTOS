@@ -40,7 +40,8 @@ OBJS=${COMPILER}/main.o	\
     ${COMPILER}/heap_1.o  \
     ${COMPILER}/osram96x16.o \
     ${COMPILER}/sensor_task.o \
-		${COMPILER}/syscalls.o
+		${COMPILER}/syscalls.o \
+		${COMPILER}/utils.o
 
 INIT_OBJS= ${COMPILER}/startup.o
 

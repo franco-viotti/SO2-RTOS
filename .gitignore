@@ -1,0 +1,6 @@
+*.axf
+*.bin
+*.o
+*.d
+*.map
+gcc/*
