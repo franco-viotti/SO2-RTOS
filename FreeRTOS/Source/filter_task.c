@@ -1,8 +1,9 @@
 #include "filter_task.h"
 
-// Buffer circular para las muestras
-static int samples[FILTER_N_DEFAULT];
-static int currentIndex = 0;
+int* samples = NULL;  // Buffer dinámico
+int samplesCount = 0;  // Contador de muestras recibidas
+static int currentIndex = 0; // Indice del buffer circular
+int currentN = FILTER_N_DEFAULT;
 
 static void vFilterTask(void *pvParameters)
 {
@@ -12,7 +13,13 @@ static void vFilterTask(void *pvParameters)
   int samplesCount = 0;  // Contador de muestras recibidas
   TickType_t startTime = xTaskGetTickCount();  // Tiempo inicial
 
-  // Inicializar el buffer con ceros
+  // Asignar memoria para el buffer e inicializar con ceros
+  samples = pvPortMalloc(FILTER_N_DEFAULT * sizeof(int));
+  if(samples == NULL)
+  {
+    UARTSendError("Error de memoria al asignar buffer 'samples'");
+    return;
+  }
   for(int i = 0; i < FILTER_N_DEFAULT; i++)
   {
     samples[i] = 0;
@@ -28,6 +35,12 @@ static void vFilterTask(void *pvParameters)
       if(samplesCount < FILTER_N_DEFAULT)
         samplesCount++;
 
+      // Imprimir valores recibidos desde el sensor
+      UARTSend("Recibido desde el sensor: "); // TODO: BORRAR
+      int_to_string(newTemp, str);
+      UARTSend(str);
+      UARTSend("°C\r\n");
+
       // Calcular promedio usando samplesCount en lugar de FILTER_N_DEFAULT
       sum = 0;
       for(int i = 0; i < samplesCount; i++)
@@ -40,11 +53,11 @@ static void vFilterTask(void *pvParameters)
       filteredData.temperature = average;
       filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
 
-      // Enviar a display
-      if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
-      {
-        UARTSendError("Fallo al enviar a cola");
-      }
+      // Enviar a display // TODO: DEJAR COMENTADO PORQUE BLOQUEA
+      //if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
+      //{
+      //  UARTSendError("Fallo al enviar a cola");
+      //}
 
       // Mostrar resultado
       UARTSend("Filtrado (");
