@@ -23,21 +23,26 @@ static void vDisplayTask(void *pvParameters)
   OSRAMInit(false);
   OSRAMStringDraw("TP4: RTOS", 21, 0);
   OSRAMStringDraw("FCEFYN: SO2", 16, 1);
-
   vTaskDelay(pdMS_TO_TICKS(3000));  // Esperar 3 segundos para mostrar el mensaje inicial
 
   for (;;)
   {
-    // Limpiar la zona del gráfico antes de redibujar
-    OSRAMClear();
-
     if (xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) != pdPASS)
     {
       UARTSendError("Error al recibir de la cola de datos filtrados");
     }
 
     newTemp = newData.temperature;
-    newTimeStamp = newData.time_ms;
+    newTimeStamp = newData.time_ms/1000; // Representar en segundos
+
+    // Limpiar la zona del gráfico antes de redibujar
+    OSRAMClear();
+    OSRAMStringDraw("T:", 0, 0);
+    OSRAMStringDraw("t:", 0, 1);
+    int_to_string(newTemp, str);
+    OSRAMStringDraw(str, 10, 0);
+    long_to_string(newTimeStamp, str);
+    OSRAMStringDraw(str, 10, 1);
 
     UARTSend("Display recibio - Temp: ");
     int_to_string(newTemp, str);
