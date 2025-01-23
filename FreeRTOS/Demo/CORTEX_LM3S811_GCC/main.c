@@ -84,6 +84,8 @@
 #include "sensor_task.h"
 #include "filter_task.h"
 #include "display_task.h"
+#include "uart_cmd_task.h"
+#include "semphr.h"
 
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
@@ -156,10 +158,19 @@ int main( void )
 	/* Create the queue used to pass message to vPrintTask. */
 	xPrintQueue = xQueueCreate( mainQUEUE_SIZE, sizeof( char * ) );
 
+  /* Inicializar mutex */
+  xNMutex = xSemaphoreCreateMutex();
+  if(xNMutex == NULL)
+  {
+    UARTSendError("Error creando mutex");
+    while(1);
+  }
+  
   /* Start my tasks */
   vStartSensorTask();
   vStartFilterTask();
-  vStartDisplayTask();
+  // vStartDisplayTask();
+  vStartUartCmdTask();
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
@@ -211,8 +222,8 @@ static void prvSetupHardware( void )
 
 	/* Initialise the LCD> */
   OSRAMInit( false );
-  OSRAMStringDraw("www.FreeRTOS.org", 0, 0);
-	OSRAMStringDraw("LM3S811 demo", 16, 1);
+  OSRAMStringDraw("TP4: RTOS", 21, 0);
+  OSRAMStringDraw("FCEFYN: SO2", 16, 1);
 }
 /*-----------------------------------------------------------*/
 

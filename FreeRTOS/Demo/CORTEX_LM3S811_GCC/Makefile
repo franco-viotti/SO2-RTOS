@@ -33,17 +33,18 @@ CFLAGS+=-I hw_include -I . -I ${RTOS_SOURCE_DIR}/include -I ${RTOS_SOURCE_DIR}/p
 VPATH=${RTOS_SOURCE_DIR}:${RTOS_SOURCE_DIR}/portable/MemMang:${RTOS_SOURCE_DIR}/portable/GCC/ARM_CM3:${DEMO_SOURCE_DIR}:init:hw_include
 
 OBJS=${COMPILER}/main.o	\
-    ${COMPILER}/list.o    \
-    ${COMPILER}/queue.o   \
-    ${COMPILER}/tasks.o   \
-    ${COMPILER}/port.o    \
-    ${COMPILER}/heap_1.o  \
+    ${COMPILER}/list.o \
+    ${COMPILER}/queue.o \
+    ${COMPILER}/tasks.o \
+    ${COMPILER}/port.o \
+    ${COMPILER}/heap_1.o \
     ${COMPILER}/osram96x16.o \
     ${COMPILER}/sensor_task.o \
     ${COMPILER}/syscalls.o \
     ${COMPILER}/utils.o \
     ${COMPILER}/filter_task.o \
-    ${COMPILER}/display_task.o
+    ${COMPILER}/display_task.o \
+    ${COMPILER}/uart_cmd_task.o
 
 INIT_OBJS= ${COMPILER}/startup.o
 
