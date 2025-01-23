@@ -145,6 +145,9 @@ int main( void )
 	vSemaphoreCreateBinary( xButtonSemaphore );
 	xSemaphoreTake( xButtonSemaphore, 0 );
 
+  /* Enviar mensaje de bienvenida por UART */
+  vWelcomeMessage();
+  
   /* Crear la cola del sensor al filtro pasa bajos */
   xTemperatureQueue = xQueueCreate( 1, sizeof(int) );
   /* Crear la cola del filtro al display */
@@ -272,4 +275,15 @@ void vGPIO_ISR( void )
   /* 1. Dispara PendSV para realizar el cambio de contexto */
   /* 2. El cambio se realizará cuando se salga de la ISR */
   portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
+}
+
+void vWelcomeMessage(void)
+{
+  UARTSend("Bienvenidos al Trabajo Práctico N°4: RTOS\r\n");
+  UARTSend("FCEFYN: SO2\r\n");
+  UARTSend("Integrantes:\r\n");
+  UARTSend("  - Franco Viotti\r\n");
+  UARTSend("Algunas instrucciones: \r\n");
+  UARTSend("  - Para cambiar la cantidad de muestras del filtro pasa bajos, ingrese N=X donde X es el nuevo valor\r\n");
+  vTaskDelay(pdMS_TO_TICKS(5000));
 }
