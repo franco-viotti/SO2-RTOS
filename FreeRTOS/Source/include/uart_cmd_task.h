@@ -4,6 +4,7 @@
 #include "FreeRTOS.h"
 #include "filter_task.h"
 #include "DriverLib.h"
+#include <stdbool.h>
 
 #define CMD_BUFFER_SIZE 10
 

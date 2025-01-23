@@ -282,12 +282,10 @@ void vGPIO_ISR( void )
 
 void vWelcomeMessage(void)
 {
-  //UARTSend("\r\n\r\n");
   UARTSend("\r\n\r\nBienvenidos al Trabajo Práctico N°4: RTOS\r\n");
   UARTSend("FCEFYN: SO2\r\n");
   UARTSend("Integrantes:\r\n");
   UARTSend("  - Franco Viotti\r\n");
   UARTSend("Algunas instrucciones: \r\n");
   UARTSend("  - Para cambiar la cantidad de muestras del filtro pasa bajos, ingrese N=X donde X es el nuevo valor\r\n\r\n\r\n");
-  //UARTSend("\r\n\r\n\r\n");
 }
