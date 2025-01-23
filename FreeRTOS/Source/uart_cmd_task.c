@@ -85,9 +85,6 @@ static void vUartCmdTask(void *pvParameters)
 
   for (;;)
   {
-    UARTSend("Ingrese un comando con el formato N=X: ");
-    UARTSend("\r\n");
-
     if (!(HWREG(UART0_BASE + UART_O_FR) & UART_FR_RXFE))
     {
       char c = UARTCharGet(UART0_BASE);

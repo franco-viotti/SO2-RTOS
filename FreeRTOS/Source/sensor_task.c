@@ -19,11 +19,6 @@ static void vSensorTask(void *pvParameters)
     {
       UARTSendError("Fallo al enviar a cola");
     }
-
-    UARTSend("Enviando a cola: ");  // Debug
-    int_to_string(temperature, str);
-    UARTSend(str);
-    UARTSend("°C\r\n");
     
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(SENSOR_PERIOD_MS));
   }

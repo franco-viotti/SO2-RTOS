@@ -150,8 +150,11 @@ int main( void )
   
   /* Crear la cola del sensor al filtro pasa bajos */
   xTemperatureQueue = xQueueCreate( 1, sizeof(int) );
+  
   /* Crear la cola del filtro al display */
   xFilteredTempQueue = xQueueCreate(10, sizeof(TempData_t));
+  
+  /* Verificar que las colas se hayan creado correctamente */
   if (xTemperatureQueue == NULL || xFilteredTempQueue == NULL)
   {
     UARTSendError("Error al crear la cola del sensor");
@@ -279,11 +282,12 @@ void vGPIO_ISR( void )
 
 void vWelcomeMessage(void)
 {
-  UARTSend("Bienvenidos al Trabajo Práctico N°4: RTOS\r\n");
+  //UARTSend("\r\n\r\n");
+  UARTSend("\r\n\r\nBienvenidos al Trabajo Práctico N°4: RTOS\r\n");
   UARTSend("FCEFYN: SO2\r\n");
   UARTSend("Integrantes:\r\n");
   UARTSend("  - Franco Viotti\r\n");
   UARTSend("Algunas instrucciones: \r\n");
-  UARTSend("  - Para cambiar la cantidad de muestras del filtro pasa bajos, ingrese N=X donde X es el nuevo valor\r\n");
-  vTaskDelay(pdMS_TO_TICKS(5000));
+  UARTSend("  - Para cambiar la cantidad de muestras del filtro pasa bajos, ingrese N=X donde X es el nuevo valor\r\n\r\n\r\n");
+  //UARTSend("\r\n\r\n\r\n");
 }

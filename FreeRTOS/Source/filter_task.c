@@ -2,11 +2,12 @@
 
 int* samples = NULL;  // Buffer dinámico
 int samplesCount = 0;  // Contador de muestras recibidas
-static int currentIndex = 0; // Indice del buffer circular
-int currentN = FILTER_N_DEFAULT;
-volatile int requestedN = FILTER_N_DEFAULT;
+static int currentIndex = 0; // Indice del buffer dinámico
+int currentN = FILTER_N_DEFAULT; // Inicialmente, N es igual a FILTER_N_DEFAULT
+volatile int requestedN = FILTER_N_DEFAULT; // Lo mismo para requestedN
 SemaphoreHandle_t xNMutex;
 
+// Función para redimensionar el buffer
 static void resizeBuffer(int newSize)
 {
   int* newBuffer = pvPortMalloc(newSize * sizeof(int));
@@ -23,37 +24,22 @@ static void resizeBuffer(int newSize)
   // Copiar datos antiguos si existen
   if(samples != NULL)
   {
+    // La cantidad de muestras a copiar puede ser menor si se reduce N
+    // o igual a currentN si se aumenta N
     int copySize = currentN < newSize ? currentN : newSize;
+    
     for(int i = 0; i < copySize; i++)
       newBuffer[i] = samples[i];
+    // Liberar memoria del buffer anterior
     vPortFree(samples);
   }
 
   samples = newBuffer;
   currentN = newSize;
-  // LOG NEW CURRENTN
-  UARTSend("Desde resizeBuffer: nuevo N: ");
-  char str[10];
-  int_to_string(currentN, str);
-  UARTSend(str);
-  UARTSend("\r\n");
-  //samplesCount = 0;
-  //currentIndex = 0;
-  //UARTSend("Nuevo samplesCount: ");
-  //int_to_string(samplesCount, str);
-  //UARTSend(str);
-  //UARTSend("\r\n");
-  //UARTSend("Nuevo currentIndex: ");
-  //int_to_string(currentIndex, str);
-  //UARTSend(str);
-  //UARTSend("\r\n");
-  vTaskDelay(pdMS_TO_TICKS(5000));  // Delay para evitar cambios muy rápidos
 }
 
 static void vFilterTask(void *pvParameters)
 {
-  vTaskDelay(pdMS_TO_TICKS(10000));
-  
   int newTemp, sum, average;
   TempData_t filteredData;
   char str[10];
@@ -68,9 +54,7 @@ static void vFilterTask(void *pvParameters)
     return;
   }
   for(int i = 0; i < FILTER_N_DEFAULT; i++)
-  {
     samples[i] = 0;
-  }
 
   for(;;)
   {
@@ -80,14 +64,9 @@ static void vFilterTask(void *pvParameters)
       if(requestedN != currentN)
       {
         resizeBuffer(requestedN);
-        // Log the new currentN
-        UARTSend("Nuevo N: ");
-        int_to_string(currentN, str);
-        UARTSend(str);
-        UARTSend("\r\n");
+        // Arrancamos el buffer desde el indice 0 y sin muestras
         samplesCount = 0;
         currentIndex = 0;
-        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay para evitar cambios muy rápidos
       }
       xSemaphoreGive(xNMutex);
     }
@@ -98,45 +77,20 @@ static void vFilterTask(void *pvParameters)
 
     if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS)
     {
-      // Actualizar buffer circular
+      // Actualizar buffer circular con el nuevo valor de temperatura obtenido de la cola
       samples[currentIndex] = newTemp;
-      //currentIndex = (currentIndex + 1) % FILTER_N_DEFAULT;
-      //if(samplesCount < FILTER_N_DEFAULT)
-      //  samplesCount++;
 
+      // Actualizar el índice teniendo en cuenta el tamaño actual de N
       currentIndex = (currentIndex + 1) % currentN;
       if(samplesCount < currentN)
-      {
         samplesCount++;
-        UARTSend("Nuevo samplesCount: ");
-        int_to_string(samplesCount, str);
-        UARTSend(str);
-        UARTSend("\r\n");
-        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay para evitar cambios muy rápidos
-      }
-      else
-      {
-        UARTSend("samplesCount no es menor que currentN: ");
-        int_to_string(samplesCount, str);
-        UARTSend(str);
-        UARTSend(" | ");
-        int_to_string(currentN, str);
-        UARTSend(str);
-        UARTSend("\r\n");
-      }
 
-      // Imprimir valores recibidos desde el sensor
-      UARTSend("Recibido desde el sensor: "); // TODO: BORRAR
-      int_to_string(newTemp, str);
-      UARTSend(str);
-      UARTSend("°C\r\n");
-
-      // Calcular promedio usando samplesCount en lugar de FILTER_N_DEFAULT
+      // Calcular promedio usando samplesCount en lugar de currentN
+      // esto nos sirve sobre todo cuando samplesCount < currentN
       sum = 0;
       for(int i = 0; i < samplesCount; i++)
-      {
         sum += samples[i];
-      }
+
       int average = sum/samplesCount;
 
       // Preparar dato filtrado con timestamp actual
