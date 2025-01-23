@@ -43,7 +43,7 @@ OBJS=${COMPILER}/main.o	\
     ${COMPILER}/syscalls.o \
     ${COMPILER}/utils.o \
     ${COMPILER}/filter_task.o \
-    ${COMPILER}/display_task.o \
+		${COMPILER}/display_task2.o \
     ${COMPILER}/uart_cmd_task.o
 
 INIT_OBJS= ${COMPILER}/startup.o

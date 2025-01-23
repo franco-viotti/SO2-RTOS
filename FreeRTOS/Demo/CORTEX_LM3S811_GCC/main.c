@@ -112,6 +112,12 @@ efficient. */
  */
 static void prvSetupHardware( void );
 
+
+/*
+ * Configure the welcome message
+ */
+void vWelcomeMessage( void );
+
 static volatile char *pcNextChar;
 
 /* The semaphore used to wake the button handler task from within the GPIO
@@ -166,7 +172,7 @@ int main( void )
   /* Start my tasks */
   vStartSensorTask();
   vStartFilterTask();
-  // vStartDisplayTask();
+  vStartDisplayTask();
   vStartUartCmdTask();
 
 	/* Start the scheduler. */
@@ -218,9 +224,10 @@ static void prvSetupHardware( void )
 
 
 	/* Initialise the LCD> */
-  OSRAMInit( false );
-  OSRAMStringDraw("TP4: RTOS", 21, 0);
-  OSRAMStringDraw("FCEFYN: SO2", 16, 1);
+  //OSRAMInit(false);
+  //OSRAMStringDraw("TP4: RTOS", 21, 0);
+  //OSRAMStringDraw("FCEFYN: SO2", 16, 1);
+  //OSRAMClear();
 }
 /*-----------------------------------------------------------*/
 

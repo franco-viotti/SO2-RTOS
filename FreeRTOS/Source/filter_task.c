@@ -90,10 +90,10 @@ static void vFilterTask(void *pvParameters)
       filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
 
       // Enviar a display // TODO: DEJAR COMENTADO PORQUE BLOQUEA
-      //if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
-      //{
-      //  UARTSendError("Fallo al enviar a cola");
-      //}
+      if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
+      {
+        UARTSendError("Fallo al enviar a cola");
+      }
 
       // Mostrar resultado
       UARTSend("Filtrado (");
