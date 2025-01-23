@@ -85,7 +85,6 @@
 #include "filter_task.h"
 #include "display_task.h"
 #include "uart_cmd_task.h"
-#include "semphr.h"
 
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
@@ -163,14 +162,6 @@ int main( void )
 
 	/* Create the queue used to pass message to vPrintTask. */
 	xPrintQueue = xQueueCreate( mainQUEUE_SIZE, sizeof( char * ) );
-
-  /* Inicializar mutex */
-  xNMutex = xSemaphoreCreateMutex();
-  if(xNMutex == NULL)
-  {
-    UARTSendError("Error creando mutex");
-    while(1);
-  }
   
   /* Start my tasks */
   vStartSensorTask();

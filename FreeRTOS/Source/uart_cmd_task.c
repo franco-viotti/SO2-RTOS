@@ -46,16 +46,8 @@ static void vUartCmdTask(void *pvParameters)
             if (isNumber)
             {
               if (number > 0)
-              {
-                if (xSemaphoreTake(xNMutex, 0) == pdPASS)
-                {  
-                  requestedN = number;
-                  xSemaphoreGive(xNMutex);
-                }
-                else
-                {
-                  UARTSendError("Error al tomar el semáforo xNMutex\r\n");
-                }
+              {  
+                requestedN = number;
               }
             }
             else

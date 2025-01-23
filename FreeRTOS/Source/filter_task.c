@@ -59,20 +59,12 @@ static void vFilterTask(void *pvParameters)
   for(;;)
   {
     // Verificar si hay que cambiar N
-    if(xSemaphoreTake(xNMutex, 0) == pdPASS)
+    if(requestedN != currentN)
     {
-      if(requestedN != currentN)
-      {
-        resizeBuffer(requestedN);
-        // Arrancamos el buffer desde el indice 0 y sin muestras
-        samplesCount = 0;
-        currentIndex = 0;
-      }
-      xSemaphoreGive(xNMutex);
-    }
-    else
-    {
-      UARTSendError("Error al tomar el semáforo xNMutex\r\n");
+      resizeBuffer(requestedN);
+      // Arrancamos el buffer desde el indice 0 y sin muestras
+      samplesCount = 0;
+      currentIndex = 0;
     }
 
     if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS)
