@@ -4,9 +4,56 @@ int* samples = NULL;  // Buffer dinámico
 int samplesCount = 0;  // Contador de muestras recibidas
 static int currentIndex = 0; // Indice del buffer circular
 int currentN = FILTER_N_DEFAULT;
+volatile int requestedN = FILTER_N_DEFAULT;
+SemaphoreHandle_t xNMutex;
+
+static void resizeBuffer(int newSize)
+{
+  int* newBuffer = pvPortMalloc(newSize * sizeof(int));
+  if(newBuffer == NULL)
+  {
+    UARTSendError("Error de memoria al redimensionar buffer");
+    return;
+  }
+
+  // Inicializar nuevo buffer
+  for(int i = 0; i < newSize; i++)
+    newBuffer[i] = 0;
+
+  // Copiar datos antiguos si existen
+  if(samples != NULL)
+  {
+    int copySize = currentN < newSize ? currentN : newSize;
+    for(int i = 0; i < copySize; i++)
+      newBuffer[i] = samples[i];
+    vPortFree(samples);
+  }
+
+  samples = newBuffer;
+  currentN = newSize;
+  // LOG NEW CURRENTN
+  UARTSend("Desde resizeBuffer: nuevo N: ");
+  char str[10];
+  int_to_string(currentN, str);
+  UARTSend(str);
+  UARTSend("\r\n");
+  //samplesCount = 0;
+  //currentIndex = 0;
+  //UARTSend("Nuevo samplesCount: ");
+  //int_to_string(samplesCount, str);
+  //UARTSend(str);
+  //UARTSend("\r\n");
+  //UARTSend("Nuevo currentIndex: ");
+  //int_to_string(currentIndex, str);
+  //UARTSend(str);
+  //UARTSend("\r\n");
+  vTaskDelay(pdMS_TO_TICKS(5000));  // Delay para evitar cambios muy rápidos
+}
 
 static void vFilterTask(void *pvParameters)
 {
+  vTaskDelay(pdMS_TO_TICKS(10000));
+  
   int newTemp, sum, average;
   TempData_t filteredData;
   char str[10];
@@ -27,13 +74,56 @@ static void vFilterTask(void *pvParameters)
 
   for(;;)
   {
+    // Verificar si hay que cambiar N
+    if(xSemaphoreTake(xNMutex, 0) == pdPASS)
+    {
+      if(requestedN != currentN)
+      {
+        resizeBuffer(requestedN);
+        // Log the new currentN
+        UARTSend("Nuevo N: ");
+        int_to_string(currentN, str);
+        UARTSend(str);
+        UARTSend("\r\n");
+        samplesCount = 0;
+        currentIndex = 0;
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay para evitar cambios muy rápidos
+      }
+      xSemaphoreGive(xNMutex);
+    }
+    else
+    {
+      UARTSendError("Error al tomar el semáforo xNMutex\r\n");
+    }
+
     if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS)
     {
       // Actualizar buffer circular
       samples[currentIndex] = newTemp;
-      currentIndex = (currentIndex + 1) % FILTER_N_DEFAULT;
-      if(samplesCount < FILTER_N_DEFAULT)
+      //currentIndex = (currentIndex + 1) % FILTER_N_DEFAULT;
+      //if(samplesCount < FILTER_N_DEFAULT)
+      //  samplesCount++;
+
+      currentIndex = (currentIndex + 1) % currentN;
+      if(samplesCount < currentN)
+      {
         samplesCount++;
+        UARTSend("Nuevo samplesCount: ");
+        int_to_string(samplesCount, str);
+        UARTSend(str);
+        UARTSend("\r\n");
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay para evitar cambios muy rápidos
+      }
+      else
+      {
+        UARTSend("samplesCount no es menor que currentN: ");
+        int_to_string(samplesCount, str);
+        UARTSend(str);
+        UARTSend(" | ");
+        int_to_string(currentN, str);
+        UARTSend(str);
+        UARTSend("\r\n");
+      }
 
       // Imprimir valores recibidos desde el sensor
       UARTSend("Recibido desde el sensor: "); // TODO: BORRAR

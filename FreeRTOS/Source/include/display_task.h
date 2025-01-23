@@ -8,6 +8,7 @@
 // Definiciones para el display
 #define DISPLAY_WIDTH    96  // Ancho del OLED
 #define DISPLAY_HEIGHT   16  // Alto del OLED
+// #define MAX_POINTS 96  // Ancho del display
 
 // Declaración externa de la cola que usaremos
 extern QueueHandle_t xFilteredTempQueue;
