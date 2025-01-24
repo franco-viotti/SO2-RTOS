@@ -9,16 +9,26 @@
 extern QueueHandle_t xFilteredTempQueue;
 extern int currentN;
 
+// Función para obtener el bit correspondiente a la temperatura en el LCD
 static void getBitForTemperature(int temp, unsigned char *point) {
-  point[0] = 0x00;  // byte superior
-  point[1] = 0x80;  // byte inferior con el bit del eje X
-  
-  int bit_position = 7 - ((temp - TEMP_MIN) * 8) / (TEMP_MAX - TEMP_MIN);
-  
+  point[0] = 0x00; // Byte superior: inicialmente todos los bits en 0
+  point[1] = 0x80; // Byte inferior: bit 7 en 1 para mantener el eje X
+
+  // Mapeo de temperatura dentro del LCD
+  // Necesitamos:
+  // 1. Normalizar la temperatura (temp - TEMP_MIN), haciendo que TEMP_MIN sea 0
+  // 2. Obtener el rango total de temperaturas (TEMP_MAX - TEMP_MIN)
+  // * 14 y el 14 - al inicio mapean este rango a nuestros bits disponibles (0-14, excluyendo el bit 15 que es para el eje X)
+  int bit_position = 14 - ((temp - TEMP_MIN) * 14) / (TEMP_MAX - TEMP_MIN);
+
+  if (temp == TEMP_MAX) bit_position = 0; // TEMP_MAX se dibuja en el bit más alto
+  if (bit_position >= 15) bit_position = 14; // Evita escribir en el bit del eje X
+
+  // Finalmente, colocamos el bit en el byte correcto
   if (bit_position < 8) {
-    point[0] |= (1 << bit_position);
+    point[0] |= (1 << bit_position); // Bits 0-7 van en el byte superior
   } else {
-    point[1] |= (1 << (bit_position - 8));
+    point[1] |= (1 << (bit_position - 8)); // Bits 8-14 van en el byte inferior
   }
 }
 
