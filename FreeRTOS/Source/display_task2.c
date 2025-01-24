@@ -1,13 +1,19 @@
 #include "display_task2.h"
 #include "filter_task.h"
 #include "utils.h"
+#include <stdbool.h>
 
 #define DISPLAY_WIDTH 96
 #define DISPLAY_HEIGHT 16
-#define GRAPH_START_X 20
+#define GRAPH_START_X 24
+#define TEMP_HISTORY_SIZE (DISPLAY_WIDTH - GRAPH_START_X - 5)  // Espacio disponible para graficar
 
 extern QueueHandle_t xFilteredTempQueue;
 extern int currentN;
+
+// Declaramos el buffer y un índice para controlar cuántos valores tenemos
+static int tempBuffer[TEMP_HISTORY_SIZE];
+static int bufferIndex = 0;
 
 // Función para obtener el bit correspondiente a la temperatura en el LCD
 static void getBitForTemperature(int temp, unsigned char *point) {
@@ -35,7 +41,7 @@ static void getBitForTemperature(int temp, unsigned char *point) {
 static void vDisplayTask(void *pvParameters) {
   char str[10];
   TempData_t newData;
-  static int x_start = GRAPH_START_X + 5;
+  static int x_start = GRAPH_START_X + 1;
   unsigned char bufTmp[2];
   
   OSRAMInit(false);
@@ -43,6 +49,10 @@ static void vDisplayTask(void *pvParameters) {
   for (;;) {
     if (xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS) {
       OSRAMClear();
+
+      // Almacenamos la nueva temperatura en el buffer
+      tempBuffer[bufferIndex] = newData.temperature;
+      bufferIndex = (bufferIndex < TEMP_HISTORY_SIZE) ? bufferIndex + 1 : bufferIndex;
       
       // Dibujar textos
       OSRAMStringDraw("T:", 0, 0);
@@ -54,7 +64,7 @@ static void vDisplayTask(void *pvParameters) {
       
       // Dibujar eje Y
       unsigned char y_axis[] = {0xFF, 0xFF};
-      OSRAMImageDraw(y_axis, GRAPH_START_X + 4, 0, 1, 2);
+      OSRAMImageDraw(y_axis, GRAPH_START_X, 0, 1, 2);
       
       // Dibujar eje X
       unsigned char x_axis[] = {0x80}; // Un solo byte
@@ -62,12 +72,16 @@ static void vDisplayTask(void *pvParameters) {
         OSRAMImageDraw(x_axis, i, 1, 1, 1);
       }
 
-      unsigned char temp_point[2];
-      getBitForTemperature(newData.temperature, temp_point);
-      OSRAMImageDraw(temp_point, x_start, 0, 1, 2);
-    }
+      // Graficar todos los puntos almacenados en el buffer
+      for (int i = 0; i < bufferIndex; i++) {
+        unsigned char temp_point[2];
+        getBitForTemperature(tempBuffer[i], temp_point);
+        OSRAMImageDraw(temp_point, x_start + i, 0, 1, 2);
+      }
+    
     vTaskDelay(pdMS_TO_TICKS(500));
   }
+}
 }
 
 void vStartDisplayTask(void) {
