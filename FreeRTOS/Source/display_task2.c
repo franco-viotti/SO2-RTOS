@@ -3,19 +3,26 @@
 #include "utils.h"
 #include <stdbool.h>
 
+// Definiciones para el display y el gráfico
 #define DISPLAY_WIDTH 96
 #define DISPLAY_HEIGHT 16
 #define GRAPH_START_X 24
 #define TEMP_HISTORY_SIZE (DISPLAY_WIDTH - GRAPH_START_X - 5)  // Espacio disponible para graficar
 
+// Referencias externas
 extern QueueHandle_t xFilteredTempQueue;
 extern int currentN;
 
-// Declaramos el buffer y un índice para controlar cuántos valores tenemos
-static int tempBuffer[TEMP_HISTORY_SIZE];
-static int bufferIndex = 0;
+// Estructura para el buffer circular que almacena temperaturas
+static struct {
+  int values[TEMP_HISTORY_SIZE];  // Array de temperaturas
+  int head;                       // Índice para la próxima inserción
+} tempBuffer = {0};               // Inicializado en cero
 
-// Función para obtener el bit correspondiente a la temperatura en el LCD
+// Control del estado del buffer
+static bool buffer_is_full = false;
+
+// Convierte una temperatura en su representación de bits para el display
 static void getBitForTemperature(int temp, unsigned char *point) {
   point[0] = 0x00; // Byte superior: inicialmente todos los bits en 0
   point[1] = 0x80; // Byte inferior: bit 7 en 1 para mantener el eje X
@@ -27,34 +34,36 @@ static void getBitForTemperature(int temp, unsigned char *point) {
   // * 14 y el 14 - al inicio mapean este rango a nuestros bits disponibles (0-14, excluyendo el bit 15 que es para el eje X)
   int bit_position = 14 - ((temp - TEMP_MIN) * 14) / (TEMP_MAX - TEMP_MIN);
 
-  if (temp == TEMP_MAX) bit_position = 0; // TEMP_MAX se dibuja en el bit más alto
-  if (bit_position >= 15) bit_position = 14; // Evita escribir en el bit del eje X
+  // Manejo de casos especiales
+  if (temp == TEMP_MAX) bit_position = 0;    // TEMP_MAX se dibuja en el bit más alto
+  if (bit_position >= 15) bit_position = 14; // Prevenir escritura en bit del eje X
 
-  // Finalmente, colocamos el bit en el byte correcto
-  if (bit_position < 8) {
-    point[0] |= (1 << bit_position); // Bits 0-7 van en el byte superior
-  } else {
-    point[1] |= (1 << (bit_position - 8)); // Bits 8-14 van en el byte inferior
-  }
+  // Finalmente, colocamos el bit en el byte correspondiente
+  if (bit_position < 8)
+    point[0] |= (1 << bit_position); // Bits 0-7 en byte superior
+  else 
+    point[1] |= (1 << (bit_position - 8)); // Bits 8-14 en byte inferior
 }
 
 static void vDisplayTask(void *pvParameters) {
   char str[10];
   TempData_t newData;
-  static int x_start = GRAPH_START_X + 1;
-  unsigned char bufTmp[2];
+  const int x_axis_start = GRAPH_START_X + 1;
   
   OSRAMInit(false);
   
   for (;;) {
     if (xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS) {
-      OSRAMClear();
-
-      // Almacenamos la nueva temperatura en el buffer
-      tempBuffer[bufferIndex] = newData.temperature;
-      bufferIndex = (bufferIndex < TEMP_HISTORY_SIZE) ? bufferIndex + 1 : bufferIndex;
+      // Actualizar buffer circular
+      tempBuffer.values[tempBuffer.head] = newData.temperature;
+      tempBuffer.head = (tempBuffer.head + 1) % TEMP_HISTORY_SIZE;
       
-      // Dibujar textos
+      if (tempBuffer.head == 0)
+        buffer_is_full = true;  // Indicar que completamos una vuelta
+
+      OSRAMClear();
+      
+      // Dibujar información textual
       OSRAMStringDraw("T:", 0, 0);
       OSRAMStringDraw("t:", 0, 1);
       int_to_string(newData.temperature, str);
@@ -67,20 +76,23 @@ static void vDisplayTask(void *pvParameters) {
       OSRAMImageDraw(y_axis, GRAPH_START_X, 0, 1, 2);
       
       // Dibujar eje X
-      unsigned char x_axis[] = {0x80}; // Un solo byte
-      for (int i = x_start; i < DISPLAY_WIDTH; i++) {
+      unsigned char x_axis[] = {0x80};
+      for (int i = x_axis_start; i < DISPLAY_WIDTH; i++)
         OSRAMImageDraw(x_axis, i, 1, 1, 1);
-      }
 
-      // Graficar todos los puntos almacenados en el buffer
-      for (int i = 0; i < bufferIndex; i++) {
+      // Graficar histórico de temperaturas
+      int points_to_draw = buffer_is_full ? TEMP_HISTORY_SIZE : tempBuffer.head;
+      for (int i = 0; i < points_to_draw; i++) {
+        // Calcular posición en el buffer de manera circular
+        int buffer_pos = (tempBuffer.head - points_to_draw + i + TEMP_HISTORY_SIZE) % TEMP_HISTORY_SIZE;
+
+        // Convertir temperatura a representación de bits y dibujar
         unsigned char temp_point[2];
-        getBitForTemperature(tempBuffer[i], temp_point);
-        OSRAMImageDraw(temp_point, x_start + i, 0, 1, 2);
+        getBitForTemperature(tempBuffer.values[buffer_pos], temp_point);
+        OSRAMImageDraw(temp_point, x_axis_start + i, 0, 1, 2);
       }
-    
+    }
     vTaskDelay(pdMS_TO_TICKS(500));
-  }
 }
 }
 

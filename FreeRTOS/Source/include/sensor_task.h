@@ -7,7 +7,7 @@
 #include "utils.h"
 
 // Definiciones
-#define SENSOR_FREQ_HZ    10 // TODO: add cero back
+#define SENSOR_FREQ_HZ    1 //0 // TODO: add cero back. Target is 10 Hz
 #define SENSOR_PERIOD_MS  (1000 / SENSOR_FREQ_HZ)
 
 // La declaración externa de la cola permite que sensor_task.c pueda usar la cola
