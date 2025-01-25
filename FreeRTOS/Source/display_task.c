@@ -1,197 +1,101 @@
 #include "display_task.h"
+#include "filter_task.h"
+#include "utils.h"
+#include <stdbool.h>
 
-// Variables globales para el historial
-static TempData_t tempHistory[DISPLAY_WIDTH];
-static int historyIndex = 0;
+// Definiciones para el display y el gráfico
+#define DISPLAY_WIDTH 96
+#define DISPLAY_HEIGHT 16
+#define GRAPH_START_X 24
+#define TEMP_HISTORY_SIZE (DISPLAY_WIDTH - GRAPH_START_X - 5)  // Espacio disponible para graficar
 
-// Mapea temperatura a coordenada Y del display
-static int mapTempToY(int temp) {
-  return DISPLAY_HEIGHT - 1 - ((temp - TEMP_MIN) * (DISPLAY_HEIGHT - 1)) / (TEMP_MAX - TEMP_MIN);
+// Referencias externas
+extern QueueHandle_t xFilteredTempQueue;
+extern int currentN;
+
+// Estructura para el buffer circular que almacena temperaturas
+static struct {
+  int values[TEMP_HISTORY_SIZE];  // Array de temperaturas
+  int head;                       // Índice para la próxima inserción
+} tempBuffer = {0};               // Inicializado en cero
+
+// Control del estado del buffer
+static bool buffer_is_full = false;
+
+// Convierte una temperatura en su representación de bits para el display
+static void getBitForTemperature(int temp, unsigned char *point) {
+  point[0] = 0x00; // Byte superior: inicialmente todos los bits en 0
+  point[1] = 0x80; // Byte inferior: bit 7 en 1 para mantener el eje X
+
+  // Mapeo de temperatura dentro del LCD
+  // Necesitamos:
+  // 1. Normalizar la temperatura (temp - TEMP_MIN), haciendo que TEMP_MIN sea 0
+  // 2. Obtener el rango total de temperaturas (TEMP_MAX - TEMP_MIN)
+  // * 14 y el 14 - al inicio mapean este rango a nuestros bits disponibles (0-14, excluyendo el bit 15 que es para el eje X)
+  int bit_position = 14 - ((temp - TEMP_MIN) * 14) / (TEMP_MAX - TEMP_MIN);
+
+  // Manejo de casos especiales
+  if (temp == TEMP_MAX) bit_position = 0;    // TEMP_MAX se dibuja en el bit más alto
+  if (bit_position >= 15) bit_position = 14; // Prevenir escritura en bit del eje X
+
+  // Finalmente, colocamos el bit en el byte correspondiente
+  if (bit_position < 8)
+    point[0] |= (1 << bit_position); // Bits 0-7 en byte superior
+  else 
+    point[1] |= (1 << (bit_position - 8)); // Bits 8-14 en byte inferior
 }
 
-/*
-static void vDisplayTask(void *pvParameters)
-{
-  vTaskDelay(pdMS_TO_TICKS(10000));
-  
-  TempData_t newData;
+static void vDisplayTask(void *pvParameters) {
   char str[10];
-  char displayBuffer[DISPLAY_HEIGHT][DISPLAY_WIDTH + 1];
-
-  // Inicializar historial
-  for(int i = 0; i < DISPLAY_WIDTH; i++) {
-    tempHistory[i].temperature = 0;
-    tempHistory[i].time_ms = 0;
-  }
-
-  // Limpiar buffer y dibujar ejes
-  for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-    for(int x = 0; x < DISPLAY_WIDTH; x++) {
-      if(y == DISPLAY_HEIGHT-1) {  // Eje X
-        displayBuffer[y][x] = '-';
-      } else if(x == 0) {          // Eje Y
-        displayBuffer[y][x] = '|';
-      } else {
-        displayBuffer[y][x] = ' ';
-      }
-    }
-    displayBuffer[y][DISPLAY_WIDTH] = '\0';
-  }
-
-  // Dibujar los ejes una sola vez
-  OSRAMClear();
-  for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-    OSRAMStringDraw(displayBuffer[y], 0, y);
-    vTaskDelay(pdMS_TO_TICKS(10));
-  }
+  TempData_t newData;
+  const int x_axis_start = GRAPH_START_X + 1;
   
-  for(;;)
-  { 
-    if(xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS)
-    {
-      // Debug output
-      UARTSend("Display recibio - Temp: ");
+  OSRAMInit(false);
+  
+  for (;;) {
+    if (xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS) {
+      // Actualizar buffer circular
+      tempBuffer.values[tempBuffer.head] = newData.temperature;
+      tempBuffer.head = (tempBuffer.head + 1) % TEMP_HISTORY_SIZE;
+      
+      if (tempBuffer.head == 0)
+        buffer_is_full = true;  // Indicar que completamos una vuelta
+
+      OSRAMClear();
+      
+      // Dibujar información textual
+      OSRAMStringDraw("T:", 0, 0);
+      OSRAMStringDraw("t:", 0, 1);
       int_to_string(newData.temperature, str);
-      UARTSend(str);
-      UARTSend(" Time(ms): ");
-      long_to_string(newData.time_ms, str);
-      UARTSend(str);
-      UARTSend("\r\n");
-
-      // Agregar nuevo punto al historial
-      tempHistory[historyIndex] = newData;
-      historyIndex = (historyIndex + 1) % DISPLAY_WIDTH;
-
-      // Limpiar buffer
-      for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-        for(int x = 0; x < DISPLAY_WIDTH; x++) {
-          displayBuffer[y][x] = ' ';
-        }
-        displayBuffer[y][DISPLAY_WIDTH] = '\0';
-      }
-
-      // Dibujar todos los puntos
-      for(int i = 0; i < DISPLAY_WIDTH; i++) {
-        if(tempHistory[i].temperature != 0) {
-          int y = mapTempToY(tempHistory[i].temperature);
-          if(y >= 0 && y < DISPLAY_HEIGHT) {
-            displayBuffer[y][i] = '*';
-          }
-        }
-      }
-
-      // Actualizar display
-      for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-        OSRAMStringDraw(displayBuffer[y], 0, y);
-        vTaskDelay(pdMS_TO_TICKS(10));
-      }
-    }
-  }
-}
-*/
-
-/*static void vDisplayTask(void *pvParameters)
-{
-    TempData_t newData;
-    char displayBuffer[DISPLAY_HEIGHT][DISPLAY_WIDTH + 1];
-    
-    // Limpiar buffer y dibujar ejes
-    for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-        for(int x = 0; x < DISPLAY_WIDTH; x++) {
-            if(y == DISPLAY_HEIGHT-1) {  // Eje X
-                displayBuffer[y][x] = '-';
-            } else if(x == 0) {          // Eje Y
-                displayBuffer[y][x] = '|';
-            } else {
-                displayBuffer[y][x] = ' ';
-            }
-        }
-        displayBuffer[y][DISPLAY_WIDTH] = '\0';
-    }
-
-    // Dibujar los ejes una sola vez
-    OSRAMClear();
-    for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-        OSRAMStringDraw(displayBuffer[y], 0, y);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-
-    for(;;)
-    {
-        if(xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS)
-        {
-            int y = mapTempToY(newData.temperature);
-            if(y >= 0 && y < DISPLAY_HEIGHT) {
-                OSRAMStringDraw("*", DISPLAY_WIDTH-1, y);
-                vTaskDelay(pdMS_TO_TICKS(50));
-            }
-        }
-    }
-}*/
-
-/*static void vDisplayTask(void *pvParameters)
-{
-  TempData_t newData;
-  char str[10];
-  
-  // Test inicial
-  OSRAMClear();
-  OSRAMStringDraw("|", 0, 0);  // Eje Y
-  
-  UARTSend("Display iniciado\r\n");
-
-  for(;;)
-  {
-    if(xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS)
-    {
-      int y = mapTempToY(newData.temperature);
+      OSRAMStringDraw(str, 10, 0);
+      long_to_string(newData.time_ms/1000 % 100, str);
+      OSRAMStringDraw(str, 10, 1);
       
-      // Debug por UART
-      UARTSend("Dibujando punto en y=");
-      int_to_string(y, str);
-      UARTSend(str);
-      UARTSend("\r\n");
+      // Dibujar eje Y
+      unsigned char y_axis[] = {0xFF, 0xFF};
+      OSRAMImageDraw(y_axis, GRAPH_START_X, 0, 1, 2);
       
-      // Intento simple de dibujo
-      OSRAMStringDraw("*", 1, y);
-      vTaskDelay(pdMS_TO_TICKS(100));
-    }
-}
-}*/
+      // Dibujar eje X
+      unsigned char x_axis[] = {0x80};
+      for (int i = x_axis_start; i < DISPLAY_WIDTH; i++)
+        OSRAMImageDraw(x_axis, i, 1, 1, 1);
 
-static void vDisplayTask(void *pvParameters)
-{
-    TempData_t newData;
-    char str[10];
-    int x = 10;  // Dejamos espacio para la escala
-    char scaleBuffer[DISPLAY_WIDTH + 1];
-    
-    OSRAMClear();
-    
-    // Dibujar escala de temperatura
-    int_to_string(TEMP_MAX, str);
-    OSRAMStringDraw(str, 0, 0);
-    int_to_string(TEMP_MIN, str);
-    OSRAMStringDraw(str, 0, DISPLAY_HEIGHT-1);
-    
-    // Dibujar eje vertical
-    for(int y = 0; y < DISPLAY_HEIGHT; y++) {
-        OSRAMStringDraw("|", 8, y);
+      // Graficar histórico de temperaturas
+      int points_to_draw = buffer_is_full ? TEMP_HISTORY_SIZE : tempBuffer.head;
+      for (int i = 0; i < points_to_draw; i++) {
+        // Calcular posición en el buffer de manera circular
+        int buffer_pos = (tempBuffer.head - points_to_draw + i + TEMP_HISTORY_SIZE) % TEMP_HISTORY_SIZE;
+
+        // Convertir temperatura a representación de bits y dibujar
+        unsigned char temp_point[2];
+        getBitForTemperature(tempBuffer.values[buffer_pos], temp_point);
+        OSRAMImageDraw(temp_point, x_axis_start + i, 0, 1, 2);
+      }
     }
-    
-    for(;;)
-    {
-        if(xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS)
-        {
-            int y = mapTempToY(newData.temperature);
-            OSRAMStringDraw("*", x, y);
-            x = (x + 1) % DISPLAY_WIDTH;
-            if(x < 10) x = 10;  // Mantener espacio para escala
-        }
-    }
+    vTaskDelay(pdMS_TO_TICKS(500));
+}
 }
 
-void vStartDisplayTask(void)
-{
-  xTaskCreate(vDisplayTask, "Display", configMINIMAL_STACK_SIZE * 2, NULL, 1, NULL);
+void vStartDisplayTask(void) {
+  xTaskCreate(vDisplayTask, "Display", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 }
