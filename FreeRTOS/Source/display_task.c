@@ -49,20 +49,37 @@ static void vDisplayTask(void *pvParameters) {
   char str[10];
   TempData_t newData;
   const int x_axis_start = GRAPH_START_X + 1;
-  
+
+  /* MONITOREO DE STACK */
+  UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+  int_to_string(uxHighWater, str);
+  UARTSend("[INFO] Stack inicial para la tarea vDisplayTask: ");
+  UARTSend(str);
+  UARTSend("\n\r");
+  /* MONITOREO DE STACK */
+
   OSRAMInit(false);
-  
+
   for (;;) {
+
+    /* MONITOREO DE STACK */
+    uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+    int_to_string(uxHighWater, str);
+    UARTSend("[INFO] Stack actual para la tarea vDisplayTask: ");
+    UARTSend(str);
+    UARTSend("\n\r");
+    /* MONITOREO DE STACK */
+
     if (xQueueReceive(xFilteredTempQueue, &newData, portMAX_DELAY) == pdPASS) {
       // Actualizar buffer circular
       tempBuffer.values[tempBuffer.head] = newData.temperature;
       tempBuffer.head = (tempBuffer.head + 1) % TEMP_HISTORY_SIZE;
-      
+
       if (tempBuffer.head == 0)
         buffer_is_full = true;  // Indicar que completamos una vuelta
 
       OSRAMClear();
-      
+
       // Dibujar información textual
       OSRAMStringDraw("T:", 0, 0);
       OSRAMStringDraw("t:", 0, 1);
@@ -70,15 +87,31 @@ static void vDisplayTask(void *pvParameters) {
       OSRAMStringDraw(str, 10, 0);
       long_to_string(newData.time_ms/1000 % 100, str);
       OSRAMStringDraw(str, 10, 1);
-      
+
       // Dibujar eje Y
       unsigned char y_axis[] = {0xFF, 0xFF};
       OSRAMImageDraw(y_axis, GRAPH_START_X, 0, 1, 2);
-      
+
+      /* MONITOREO DE STACK */
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
+      UARTSend("[INFO] Stack actual luego del grafico de Y para la tarea vDisplayTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
       // Dibujar eje X
       unsigned char x_axis[] = {0x80};
       for (int i = x_axis_start; i < DISPLAY_WIDTH; i++)
         OSRAMImageDraw(x_axis, i, 1, 1, 1);
+
+      /* MONITOREO DE STACK */
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
+      UARTSend("[INFO] Stack actual luego del grafico de X para la tarea vDisplayTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
 
       // Graficar histórico de temperaturas
       int points_to_draw = buffer_is_full ? TEMP_HISTORY_SIZE : tempBuffer.head;
@@ -91,11 +124,20 @@ static void vDisplayTask(void *pvParameters) {
         getBitForTemperature(tempBuffer.values[buffer_pos], temp_point);
         OSRAMImageDraw(temp_point, x_axis_start + i, 0, 1, 2);
       }
+
+      /* MONITOREO DE STACK */
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
+      UARTSend("[INFO] Stack actual luego del grafico general para la tarea vDisplayTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
     }
     vTaskDelay(pdMS_TO_TICKS(500));
-}
+  }
 }
 
 void vStartDisplayTask(void) {
-  xTaskCreate(vDisplayTask, "Display", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(vDisplayTask, "Display", DISPLAY_TASK_STACK_SIZE, NULL, 1, NULL);
 }
