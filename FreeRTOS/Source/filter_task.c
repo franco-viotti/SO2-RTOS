@@ -27,7 +27,7 @@ static void resizeBuffer(int newSize)
     // La cantidad de muestras a copiar puede ser menor si se reduce N
     // o igual a currentN si se aumenta N
     int copySize = currentN < newSize ? currentN : newSize;
-    
+
     for(int i = 0; i < copySize; i++)
       newBuffer[i] = samples[i];
     // Liberar memoria del buffer anterior
@@ -40,9 +40,18 @@ static void resizeBuffer(int newSize)
 
 static void vFilterTask(void *pvParameters)
 {
+  char str[10];
+
+  /* MONITOREO DE STACK */
+  UBaseType_t uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
+  int_to_string(uxAfterGraphHighWater, str);
+  UARTSend("[INFO] Stack inicial para la tarea vFilterTask: ");
+  UARTSend(str);
+  UARTSend("\n\r");
+  /* MONITOREO DE STACK */
+
   int newTemp, sum, average;
   TempData_t filteredData;
-  char str[10];
   int samplesCount = 0;  // Contador de muestras recibidas
   TickType_t startTime = xTaskGetTickCount();  // Tiempo inicial
 
@@ -58,13 +67,40 @@ static void vFilterTask(void *pvParameters)
 
   for(;;)
   {
+
+    /* MONITOREO DE STACK */
+    uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
+    int_to_string(uxAfterGraphHighWater, str);
+    UARTSend("[INFO] Stack inicio del bucle for para la tarea vFilterTask: ");
+    UARTSend(str);
+    UARTSend("\n\r");
+    /* MONITOREO DE STACK */
+
     // Verificar si hay que cambiar N
     if(requestedN != currentN)
     {
+
+      /* MONITOREO DE STACK */
+      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxAfterGraphHighWater, str);
+      UARTSend("[INFO] Stack antes del llamado a resizeBuffer para la tarea vFilterTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
       resizeBuffer(requestedN);
       // Arrancamos el buffer desde el indice 0 y sin muestras
       samplesCount = 0;
       currentIndex = 0;
+
+      /* MONITOREO DE STACK */
+      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxAfterGraphHighWater, str);
+      UARTSend("[INFO] Stack despues del llamado a resizeBuffer para la tarea vFilterTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
     }
 
     if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS)
@@ -89,20 +125,36 @@ static void vFilterTask(void *pvParameters)
       filteredData.temperature = average;
       filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
 
-      // Enviar a display // TODO: DEJAR COMENTADO PORQUE BLOQUEA
+      /* MONITOREO DE STACK */
+      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxAfterGraphHighWater, str);
+      UARTSend("[INFO] Stack antes del envio al display para la tarea vFilterTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
+      // Enviar a display
       if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
       {
         UARTSendError("Fallo al enviar a cola");
       }
 
-      // Mostrar resultado
-      UARTSend("Filtrado (");
+      /* MONITOREO DE STACK */
+      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxAfterGraphHighWater, str);
+      UARTSend("[INFO] Stack despues del envio al display para la tarea vFilterTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
+      // Mostrar resultado // TODO: descomentar para mostrar info por UART con cantidad de muestras incluida
+      /* UARTSend("Filtrado (");
       int_to_string(samplesCount, str);
       UARTSend(str);
       UARTSend(" muestras): ");
       int_to_string(average, str);
       UARTSend(str);
-      UARTSend("°C\r\n");
+      UARTSend("°C\r\n"); */
     }
     else
     {
@@ -113,5 +165,5 @@ static void vFilterTask(void *pvParameters)
 
 void vStartFilterTask(void)
 {
-  xTaskCreate(vFilterTask, "Filter", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+  xTaskCreate(vFilterTask, "Filter", FILTER_TASK_STACK_SIZE, NULL, 2, NULL);
 }
