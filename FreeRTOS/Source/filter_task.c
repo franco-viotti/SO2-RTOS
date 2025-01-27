@@ -96,6 +96,7 @@ static void vFilterTask(void *pvParameters)
       }
 
       // Mostrar resultado
+      /* TODO: descomentar para mostrar el filtrado con la cantidad de muestras
       UARTSend("Filtrado (");
       int_to_string(samplesCount, str);
       UARTSend(str);
@@ -103,6 +104,7 @@ static void vFilterTask(void *pvParameters)
       int_to_string(average, str);
       UARTSend(str);
       UARTSend("°C\r\n");
+      */
     }
     else
     {
