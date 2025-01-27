@@ -92,10 +92,10 @@ static void vDisplayTask(void *pvParameters) {
         OSRAMImageDraw(temp_point, x_axis_start + i, 0, 1, 2);
       }
     }
-    vTaskDelay(pdMS_TO_TICKS(500));
+    //vTaskDelay(pdMS_TO_TICKS(500));
 }
 }
 
 void vStartDisplayTask(void) {
-  xTaskCreate(vDisplayTask, "Display", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(vDisplayTask, "Display", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 }
