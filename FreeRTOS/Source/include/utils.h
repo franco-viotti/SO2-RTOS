@@ -9,6 +9,12 @@
 #define TEMP_MIN        20  // Temperatura mínima
 #define TEMP_MAX        30  // Temperatura máxima
 
+// Tamaños de stack para cada tarea. Se deja un 20% de margen
+#define SENSOR_TASK_STACK_SIZE 42
+#define FILTER_TASK_STACK_SIZE 58
+#define DISPLAY_TASK_STACK_SIZE 60
+#define UART_CMD_TASK_STACK_SIZE 48
+
 // Función para enviar strings por UART
 void UARTSend(const char *str);
 

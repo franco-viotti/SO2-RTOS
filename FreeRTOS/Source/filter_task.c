@@ -8,11 +8,9 @@ volatile int requestedN = FILTER_N_DEFAULT; // Lo mismo para requestedN
 SemaphoreHandle_t xNMutex;
 
 // Función para redimensionar el buffer
-static void resizeBuffer(int newSize)
-{
+static void resizeBuffer(int newSize) {
   int* newBuffer = pvPortMalloc(newSize * sizeof(int));
-  if(newBuffer == NULL)
-  {
+  if(newBuffer == NULL) {
     UARTSendError("Error de memoria al redimensionar buffer");
     return;
   }
@@ -22,14 +20,14 @@ static void resizeBuffer(int newSize)
     newBuffer[i] = 0;
 
   // Copiar datos antiguos si existen
-  if(samples != NULL)
-  {
+  if(samples != NULL) {
     // La cantidad de muestras a copiar puede ser menor si se reduce N
     // o igual a currentN si se aumenta N
     int copySize = currentN < newSize ? currentN : newSize;
     
     for(int i = 0; i < copySize; i++)
       newBuffer[i] = samples[i];
+    
     // Liberar memoria del buffer anterior
     vPortFree(samples);
   }
@@ -38,8 +36,7 @@ static void resizeBuffer(int newSize)
   currentN = newSize;
 }
 
-static void vFilterTask(void *pvParameters)
-{
+static void vFilterTask(void *pvParameters) {
   int newTemp, sum, average;
   TempData_t filteredData;
   char str[10];
@@ -48,27 +45,24 @@ static void vFilterTask(void *pvParameters)
 
   // Asignar memoria para el buffer e inicializar con ceros
   samples = pvPortMalloc(FILTER_N_DEFAULT * sizeof(int));
-  if(samples == NULL)
-  {
+  if(samples == NULL) {
     UARTSendError("Error de memoria al asignar buffer 'samples'");
     return;
   }
+
   for(int i = 0; i < FILTER_N_DEFAULT; i++)
     samples[i] = 0;
 
-  for(;;)
-  {
+  for(;;) {
     // Verificar si hay que cambiar N
-    if(requestedN != currentN)
-    {
+    if(requestedN != currentN) {
       resizeBuffer(requestedN);
       // Arrancamos el buffer desde el indice 0 y sin muestras
       samplesCount = 0;
       currentIndex = 0;
     }
 
-    if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS)
-    {
+    if(xQueueReceive(xTemperatureQueue, &newTemp, portMAX_DELAY) == pdPASS) {
       // Actualizar buffer circular con el nuevo valor de temperatura obtenido de la cola
       samples[currentIndex] = newTemp;
 
@@ -89,31 +83,26 @@ static void vFilterTask(void *pvParameters)
       filteredData.temperature = average;
       filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
 
-      // Enviar a display // TODO: DEJAR COMENTADO PORQUE BLOQUEA
-      if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS)
-      {
+      // Enviar a display
+      if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS) {
         UARTSendError("Fallo al enviar a cola");
       }
 
       // Mostrar resultado
-      /* TODO: descomentar para mostrar el filtrado con la cantidad de muestras
-      UARTSend("Filtrado (");
+      // TODO: descomentar para mostrar el filtrado con la cantidad de muestras
+      /* UARTSend("Filtrado (");
       int_to_string(samplesCount, str);
       UARTSend(str);
       UARTSend(" muestras): ");
       int_to_string(average, str);
       UARTSend(str);
-      UARTSend("°C\r\n");
-      */
+      UARTSend("°C\r\n"); */
     }
     else
-    {
       UARTSendError("Error al recibir de la cola del sensor");
-    }
   }
 }
 
-void vStartFilterTask(void)
-{
-  xTaskCreate(vFilterTask, "Filter", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+void vStartFilterTask(void) {
+  xTaskCreate(vFilterTask, "Filter", FILTER_TASK_STACK_SIZE, NULL, configMAX_PRIORITIES, NULL);
 }

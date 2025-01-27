@@ -24,9 +24,7 @@ static void vTopTask(void *pvParameters) {
   if (pxTaskStatusArray != NULL) {
     for (;;) {
       /* Generate raw status information about each task. */
-      uxArraySize = uxTaskGetSystemState( pxTaskStatusArray,
-                                          uxArraySize,
-                                          &ulTotalRunTime );
+      uxArraySize = uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, &ulTotalRunTime );
 
       // Mostrar información de cada tarea
       UARTSend("\n\r----- Task Statistics (Total: ");
@@ -50,11 +48,6 @@ static void vTopTask(void *pvParameters) {
           default:         UARTSend("???"); break;
         }
         UARTSend("\t");
-
-        // Stack total disponible // TODO: corregir
-        //int_to_string(pxTaskStatusArray[x].usStackHighWaterMark, str);
-        //UARTSend(str);
-        //UARTSend("\t");
         
         // Stack restante
         int_to_string(pxTaskStatusArray[x].usStackHighWaterMark, str);
@@ -79,16 +72,15 @@ static void vTopTask(void *pvParameters) {
         UARTSend("\n\r");
 
       }
-
+      
       vTaskDelay(pdMS_TO_TICKS(TOP_DELAY_MS));
     }
   }
   else {
     UARTSendError("Error al asignar memoria para TaskStatusArray");
-    //vTaskDelete(NULL);
   }
 }
 
 void vStartTopTask(void) {
-  xTaskCreate(vTopTask, "Top", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  xTaskCreate(vTopTask, "Top", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES - 1, NULL);
 }

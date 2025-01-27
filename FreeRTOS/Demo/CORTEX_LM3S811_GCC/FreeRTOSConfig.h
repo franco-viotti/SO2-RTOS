@@ -55,7 +55,7 @@
 #define configUSE_TRACE_FACILITY                1
 #define INCLUDE_uxTaskGetStackHighWaterMark     1
 
-#define configMAX_PRIORITIES		( 5 )
+#define configMAX_PRIORITIES		( 6 )
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */

@@ -9,8 +9,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define TOP_DELAY_MS 1
-#define MAX_TASKS 10
+#define TOP_DELAY_MS 1000
 
 void vStartTopTask(void);
 
