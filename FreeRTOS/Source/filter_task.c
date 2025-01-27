@@ -10,6 +10,16 @@ SemaphoreHandle_t xNMutex;
 // Función para redimensionar el buffer
 static void resizeBuffer(int newSize)
 {
+  char str[10];
+
+  /* MONITOREO DE STACK */
+  UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+  int_to_string(uxHighWater, str);
+  UARTSend("[INFO] Stack inicial dentro de resizeBuffer para la tarea vFilterTask: ");
+  UARTSend(str);
+  UARTSend("\n\r");
+  /* MONITOREO DE STACK */
+
   int* newBuffer = pvPortMalloc(newSize * sizeof(int));
   if(newBuffer == NULL)
   {
@@ -18,8 +28,21 @@ static void resizeBuffer(int newSize)
   }
 
   // Inicializar nuevo buffer
-  for(int i = 0; i < newSize; i++)
+  for(int i = 0; i < newSize; i++){
+
+    /* MONITOREO DE STACK */
+    uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+    int_to_string(uxHighWater, str);
+    UARTSend("[INFO] Stack inicial dentro del buclet for de resizeBuffer para la tarea vFilterTask: ");
+    UARTSend(str);
+    UARTSend(" iteracion: ");
+    int_to_string(i, str);
+    UARTSend(str);
+    UARTSend("\n\r");
+    /* MONITOREO DE STACK */
+
     newBuffer[i] = 0;
+  }
 
   // Copiar datos antiguos si existen
   if(samples != NULL)
@@ -28,8 +51,21 @@ static void resizeBuffer(int newSize)
     // o igual a currentN si se aumenta N
     int copySize = currentN < newSize ? currentN : newSize;
 
-    for(int i = 0; i < copySize; i++)
+    for(int i = 0; i < copySize; i++){
+
+      /* MONITOREO DE STACK */
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
+      UARTSend("[INFO] Stack inicial dentro del buclet for2 de resizeBuffer para la tarea vFilterTask: ");
+      UARTSend(str);
+      UARTSend(" iteracion: ");
+      int_to_string(i, str);
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
       newBuffer[i] = samples[i];
+    }
     // Liberar memoria del buffer anterior
     vPortFree(samples);
   }
@@ -43,8 +79,8 @@ static void vFilterTask(void *pvParameters)
   char str[10];
 
   /* MONITOREO DE STACK */
-  UBaseType_t uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
-  int_to_string(uxAfterGraphHighWater, str);
+  UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+  int_to_string(uxHighWater, str);
   UARTSend("[INFO] Stack inicial para la tarea vFilterTask: ");
   UARTSend(str);
   UARTSend("\n\r");
@@ -69,8 +105,8 @@ static void vFilterTask(void *pvParameters)
   {
 
     /* MONITOREO DE STACK */
-    uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
-    int_to_string(uxAfterGraphHighWater, str);
+    uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+    int_to_string(uxHighWater, str);
     UARTSend("[INFO] Stack inicio del bucle for para la tarea vFilterTask: ");
     UARTSend(str);
     UARTSend("\n\r");
@@ -81,8 +117,8 @@ static void vFilterTask(void *pvParameters)
     {
 
       /* MONITOREO DE STACK */
-      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
-      int_to_string(uxAfterGraphHighWater, str);
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
       UARTSend("[INFO] Stack antes del llamado a resizeBuffer para la tarea vFilterTask: ");
       UARTSend(str);
       UARTSend("\n\r");
@@ -94,8 +130,8 @@ static void vFilterTask(void *pvParameters)
       currentIndex = 0;
 
       /* MONITOREO DE STACK */
-      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
-      int_to_string(uxAfterGraphHighWater, str);
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
       UARTSend("[INFO] Stack despues del llamado a resizeBuffer para la tarea vFilterTask: ");
       UARTSend(str);
       UARTSend("\n\r");
@@ -126,8 +162,8 @@ static void vFilterTask(void *pvParameters)
       filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
 
       /* MONITOREO DE STACK */
-      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
-      int_to_string(uxAfterGraphHighWater, str);
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
       UARTSend("[INFO] Stack antes del envio al display para la tarea vFilterTask: ");
       UARTSend(str);
       UARTSend("\n\r");
@@ -140,8 +176,8 @@ static void vFilterTask(void *pvParameters)
       }
 
       /* MONITOREO DE STACK */
-      uxAfterGraphHighWater = uxTaskGetStackHighWaterMark(NULL);
-      int_to_string(uxAfterGraphHighWater, str);
+      uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
       UARTSend("[INFO] Stack despues del envio al display para la tarea vFilterTask: ");
       UARTSend(str);
       UARTSend("\n\r");
