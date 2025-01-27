@@ -6,18 +6,53 @@ static void vUartCmdTask(void *pvParameters)
   int index = 0;
   int number = 0;
   bool isNumber = true;
+  
+  /* MONITOREO DE STACK */
+  UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+  char str[10];
+  int_to_string(uxHighWater, str);
+  UARTSend("[INFO] Stack inicial para la tarea vUartCmdTask: ");
+  UARTSend(str);
+  UARTSend("\n\r");
+  /* MONITOREO DE STACK */
 
   for (;;)
   {
+
+    /* MONITOREO DE STACK */
+    UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+    int_to_string(uxHighWater, str);
+    UARTSend("[INFO] Stack al inicio del bucle for para la tarea vUartCmdTask: ");
+    UARTSend(str);
+    UARTSend("\n\r");
+    /* MONITOREO DE STACK */
+
     // Chequear si hay datos en el buffer de recepción
     if (!(HWREG(UART0_BASE + UART_O_FR) & UART_FR_RXFE))
     {
       // Obtener desde el UART caracter por caracter
       char c = UARTCharGet(UART0_BASE);
 
+      /* MONITOREO DE STACK */
+      UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+      int_to_string(uxHighWater, str);
+      UARTSend("[INFO] Stack luego de obtener el caracter para la tarea vUartCmdTask: ");
+      UARTSend(str);
+      UARTSend("\n\r");
+      /* MONITOREO DE STACK */
+
       // Si es un retorno de carro o nueva línea, procesar comando completo
       if (c == '\r' || c == '\n')
       {
+
+        /* MONITOREO DE STACK */
+        UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+        int_to_string(uxHighWater, str);
+        UARTSend("[INFO] Stack en el inicio de procesamiento para la tarea vUartCmdTask: ");
+        UARTSend(str);
+        UARTSend("\n\r");
+        /* MONITOREO DE STACK */
+
         if (index > 0)
         {
           cmd[index] = '\0'; // Terminar el string
@@ -31,6 +66,18 @@ static void vUartCmdTask(void *pvParameters)
             // Construcción manual del número
             for (int i = 2; cmd[i] != '\0'; i++)
             {
+
+              /* MONITOREO DE STACK */
+              UBaseType_t uxHighWater = uxTaskGetStackHighWaterMark(NULL);
+              int_to_string(uxHighWater, str);
+              UARTSend("[INFO] Stack durante la construccion manual del numero para la tarea vUartCmdTask: ");
+              UARTSend(str);
+              UARTSend(" iteracion: ");
+              int_to_string(i, str);
+              UARTSend(str);
+              UARTSend("\n\r");
+              /* MONITOREO DE STACK */
+
               if (cmd[i] >= '0' && cmd[i] <= '9')
               {
                 number = number * 10 + (cmd[i] - '0');
@@ -71,5 +118,5 @@ static void vUartCmdTask(void *pvParameters)
 
 void vStartUartCmdTask(void)
 {
-  xTaskCreate(vUartCmdTask, "UARTCmd", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+  xTaskCreate(vUartCmdTask, "UARTCmd", UART_CMD_TASK_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 }
