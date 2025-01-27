@@ -115,5 +115,5 @@ static void vFilterTask(void *pvParameters)
 
 void vStartFilterTask(void)
 {
-  xTaskCreate(vFilterTask, "Filter", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+  xTaskCreate(vFilterTask, "Filter", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 }

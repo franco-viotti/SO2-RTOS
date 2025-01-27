@@ -27,5 +27,5 @@ static void vSensorTask(void *pvParameters)
 // Función para crear la tarea
 void vStartSensorTask(void)
 {
-  xTaskCreate(vSensorTask, "Sensor", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
+  xTaskCreate(vSensorTask, "Sensor", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 }

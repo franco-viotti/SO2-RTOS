@@ -64,12 +64,12 @@ static void vUartCmdTask(void *pvParameters)
         cmd[index++] = c;
       }
     }
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    //vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
 
 void vStartUartCmdTask(void)
 {
-  xTaskCreate(vUartCmdTask, "UARTCmd", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+  xTaskCreate(vUartCmdTask, "UARTCmd", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 }
