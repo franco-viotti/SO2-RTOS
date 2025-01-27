@@ -14,6 +14,7 @@
 #define FILTER_TASK_STACK_SIZE 58
 #define DISPLAY_TASK_STACK_SIZE 60
 #define UART_CMD_TASK_STACK_SIZE 48
+#define TOP_TASK_STACK_SIZE 50
 
 // Función para enviar strings por UART
 void UARTSend(const char *str);

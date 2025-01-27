@@ -47,13 +47,15 @@
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 70 )
 #define configTOTAL_HEAP_SIZE		( ( size_t ) ( 4000 ) )
 #define configMAX_TASK_NAME_LEN		( 10 )
-#define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		0
 #define configIDLE_SHOULD_YIELD		0
 #define configUSE_MUTEXES         1
 #define configSUPPORT_DYNAMIC_ALLOCATION  1
 
-#define configMAX_PRIORITIES		( 5 )
+#define configUSE_TRACE_FACILITY                1
+#define INCLUDE_uxTaskGetStackHighWaterMark     1
+
+#define configMAX_PRIORITIES		( 6 )
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
@@ -65,6 +67,10 @@ to exclude the API function. */
 #define INCLUDE_vTaskSuspend			0
 #define INCLUDE_vTaskDelayUntil			1
 #define INCLUDE_vTaskDelay				1
+
+#define configGENERATE_RUN_TIME_STATS 1
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 0UL
+#define portGET_RUN_TIME_COUNTER_VALUE() xTaskGetTickCount()
 
 #define configKERNEL_INTERRUPT_PRIORITY 		255
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!

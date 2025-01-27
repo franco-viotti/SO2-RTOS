@@ -85,6 +85,7 @@
 #include "filter_task.h"
 #include "display_task.h"
 #include "uart_cmd_task.h"
+#include "top_task.h"
 
 /* Delay between cycles of the 'check' task. */
 #define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
@@ -174,6 +175,7 @@ int main( void )
   vStartFilterTask();
   vStartDisplayTask();
   vStartUartCmdTask();
+  vStartTopTask();
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
