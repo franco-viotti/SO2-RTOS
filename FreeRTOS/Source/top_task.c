@@ -66,16 +66,17 @@ static void vTopTask(void *pvParameters) {
         UARTSend(str);
         UARTSend("\t");
 
-        UARTSend("\n\r");
+        // Porcentaje de CPU
+        if (ulTotalRunTime > 0) {
+          ulStatsAsPercentage = (pxTaskStatusArray[x].ulRunTimeCounter * 100UL) / ulTotalRunTime;
+          long_to_string(ulStatsAsPercentage, str);
+          UARTSend(str);
+          UARTSend("%");
+        }
+        else
+          UARTSend("???%");
 
-        //// Porcentaje de CPU
-        //if (ulTotalRunTime > 0) {
-        //  ulStatsAsPercentage = (pxTaskStatusArray[x].ulRunTimeCounter * 100UL) / ulTotalRunTime;
-        //  UARTSend("\t");
-        //  int_to_string(ulStatsAsPercentage, str);
-        //  UARTSend(str);
-        //  UARTSend("%");
-        //}
+        UARTSend("\n\r");
 
       }
 
@@ -89,5 +90,5 @@ static void vTopTask(void *pvParameters) {
 }
 
 void vStartTopTask(void) {
-  xTaskCreate(vTopTask, "Top", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(vTopTask, "Top", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 }

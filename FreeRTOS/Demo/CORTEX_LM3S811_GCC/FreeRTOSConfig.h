@@ -68,6 +68,15 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelayUntil			1
 #define INCLUDE_vTaskDelay				1
 
+#define configGENERATE_RUN_TIME_STATS 1
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 0UL
+#define portGET_RUN_TIME_COUNTER_VALUE() xTaskGetTickCount()
+
+//#define configGENERATE_RUN_TIME_STATS 1
+//#define configUSE_STATS_FORMATTING_FUNCTIONS 1
+//#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats() // Función para inicializar el timer
+//#define portGET_RUN_TIME_COUNTER_VALUE() ulGetRunTimeCounterValue()               // Función para obtener el valor del timer
+
 #define configKERNEL_INTERRUPT_PRIORITY 		255
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
