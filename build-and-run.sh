@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo -e "[INFO] Building program...⏳\n" && sleep 3
+echo -e "[INFO] Building program...⏳\n" && sleep 1
 
 make clean
 
@@ -11,7 +11,7 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo -e "\n[INFO] Succesful building ✅\n" && sleep 3
+echo -e "\n[INFO] Succesful building ✅\n" && sleep 1
 
 echo -e "[INFO] Running program on QEMU...⏳\n" && sleep 3
 qemu-system-arm -machine lm3s811evb -cpu cortex-m3 -kernel gcc/RTOSDemo.axf -serial stdio

@@ -36,8 +36,6 @@ static void FaultISR(void);
 static void IntDefaultHandler(void);
 extern void xPortPendSVHandler(void);
 extern void xPortSysTickHandler(void);
-extern void vUART_ISR( void );
-extern void vGPIO_ISR( void );
 extern void vPortSVCHandler( void );
 
 //*****************************************************************************
@@ -86,10 +84,8 @@ void (* const g_pfnVectors[])(void) =
     xPortSysTickHandler,                    // The SysTick handler
     IntDefaultHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
-    vGPIO_ISR,								// GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
     IntDefaultHandler,                      // GPIO Port E
-    vUART_ISR,								// UART0 Rx and Tx
     IntDefaultHandler,                      // UART1 Rx and Tx
     IntDefaultHandler,                      // SSI Rx and Tx
     IntDefaultHandler,                      // I2C Master and Slave
