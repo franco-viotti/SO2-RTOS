@@ -82,5 +82,5 @@ static void vTopTask(void *pvParameters) {
 }
 
 void vStartTopTask(void) {
-  xTaskCreate(vTopTask, "Top", TOP_TASK_STACK_SIZE, NULL, configMAX_PRIORITIES - 1, NULL);
+  xTaskCreate(vTopTask, "Top", TOP_TASK_STACK_SIZE, NULL, configMAX_PRIORITIES - 3, NULL);
 }

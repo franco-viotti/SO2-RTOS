@@ -1,66 +1,3 @@
-/*
- * FreeRTOS V202212.01
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * https://www.FreeRTOS.org
- * https://github.com/FreeRTOS
- *
- */
-
-
-/*
- * This project contains an application demonstrating the use of the
- * FreeRTOS.org mini real time scheduler on the Luminary Micro LM3S811 Eval
- * board.  See http://www.FreeRTOS.org for more information.
- *
- * main() simply sets up the hardware, creates all the demo application tasks,
- * then starts the scheduler.  http://www.freertos.org/a00102.html provides
- * more information on the standard demo tasks.
- *
- * In addition to a subset of the standard demo application tasks, main.c also
- * defines the following tasks:
- *
- * + A 'Print' task.  The print task is the only task permitted to access the
- * LCD - thus ensuring mutual exclusion and consistent access to the resource.
- * Other tasks do not access the LCD directly, but instead send the text they
- * wish to display to the print task.  The print task spends most of its time
- * blocked - only waking when a message is queued for display.
- *
- * + A 'Button handler' task.  The eval board contains a user push button that
- * is configured to generate interrupts.  The interrupt handler uses a
- * semaphore to wake the button handler task - demonstrating how the priority
- * mechanism can be used to defer interrupt processing to the task level.  The
- * button handler task sends a message both to the LCD (via the print task) and
- * the UART where it can be viewed using a dumb terminal (via the UART to USB
- * converter on the eval board).  NOTES:  The dumb terminal must be closed in
- * order to reflash the microcontroller.  A very basic interrupt driven UART
- * driver is used that does not use the FIFO.  19200 baud is used.
- *
- * + A 'check' task.  The check task only executes every five seconds but has a
- * high priority so is guaranteed to get processor time.  Its function is to
- * check that all the other tasks are still operational and that no errors have
- * been detected at any time.  If no errors have every been detected 'PASS' is
- * written to the display (via the print task) - if an error has ever been
- * detected the message is changed to 'FAIL'.  The position of the message is
- * changed for each write.
- */
 
 
 
@@ -74,12 +11,11 @@
 #include "semphr.h"
 
 /* Demo app includes. */
-#include "integer.h"
-#include "PollQ.h"
-#include "semtest.h"
-#include "BlockQ.h"
+//#include "integer.h"
+//#include "PollQ.h"
+//#include "semtest.h"
+//#include "BlockQ.h"
 
-/* My app includes */
 #include "utils.h"
 #include "sensor_task.h"
 #include "filter_task.h"
@@ -88,7 +24,7 @@
 #include "top_task.h"
 
 /* Delay between cycles of the 'check' task. */
-#define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
+//#define mainCHECK_DELAY						( ( TickType_t ) 5000 / portTICK_PERIOD_MS )
 
 /* UART configuration - note this does not use the FIFO so is not very
 efficient. */
@@ -96,10 +32,10 @@ efficient. */
 #define mainFIFO_SET				( 0x10 )
 
 /* Demo task priorities. */
-#define mainQUEUE_POLL_PRIORITY		( tskIDLE_PRIORITY + 2 )
-#define mainCHECK_TASK_PRIORITY		( tskIDLE_PRIORITY + 3 )
-#define mainSEM_TEST_PRIORITY		( tskIDLE_PRIORITY + 1 )
-#define mainBLOCK_Q_PRIORITY		( tskIDLE_PRIORITY + 2 )
+//#define mainQUEUE_POLL_PRIORITY		( tskIDLE_PRIORITY + 2 )
+//#define mainCHECK_TASK_PRIORITY		( tskIDLE_PRIORITY + 3 )
+//#define mainSEM_TEST_PRIORITY		( tskIDLE_PRIORITY + 1 )
+//#define mainBLOCK_Q_PRIORITY		( tskIDLE_PRIORITY + 2 )
 
 /* Demo board specifics. */
 #define mainPUSH_BUTTON             GPIO_PIN_4
@@ -148,8 +84,8 @@ int main( void )
   /* Esto nos permite que la tarea del boton se bloquee esperando el semaforo */
   /* Cuando hay una interrupcion provocada por la accion fisica del boton, el semaforo se pondra en (1) */
   /* La tarea del boton se desbloqueara y podra ejecutarse */
-	vSemaphoreCreateBinary( xButtonSemaphore );
-	xSemaphoreTake( xButtonSemaphore, 0 );
+	//vSemaphoreCreateBinary( xButtonSemaphore );
+	//xSemaphoreTake( xButtonSemaphore, 0 );
 
   /* Enviar mensaje de bienvenida por UART */
   vWelcomeMessage();
@@ -168,9 +104,9 @@ int main( void )
   }
 
 	/* Create the queue used to pass message to vPrintTask. */
-	xPrintQueue = xQueueCreate( mainQUEUE_SIZE, sizeof( char * ) );
+	//xPrintQueue = xQueueCreate( mainQUEUE_SIZE, sizeof( char * ) );
   
-  /* Start my tasks */
+  /* Start tasks */
   vStartSensorTask();
   vStartFilterTask();
   vStartDisplayTask();

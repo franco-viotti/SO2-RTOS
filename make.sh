@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo -e "[INFO] Building program...⏳\n" && sleep 1
+
 make clean
 
 make -j8
@@ -9,4 +11,4 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo "[INFO] Succesful building ✅"
+echo -e "\n[INFO] Succesful building ✅\n"

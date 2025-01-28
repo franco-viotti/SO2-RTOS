@@ -90,13 +90,13 @@ static void vFilterTask(void *pvParameters) {
 
       // Mostrar resultado
       // TODO: descomentar para mostrar el filtrado con la cantidad de muestras
-      /* UARTSend("Filtrado (");
+      UARTSend("Filtrado (");
       int_to_string(samplesCount, str);
       UARTSend(str);
       UARTSend(" muestras): ");
       int_to_string(average, str);
       UARTSend(str);
-      UARTSend("°C\r\n"); */
+      UARTSend("°C\r\n");
     }
     else
       UARTSendError("Error al recibir de la cola del sensor");
@@ -104,5 +104,5 @@ static void vFilterTask(void *pvParameters) {
 }
 
 void vStartFilterTask(void) {
-  xTaskCreate(vFilterTask, "Filter", FILTER_TASK_STACK_SIZE, NULL, configMAX_PRIORITIES, NULL);
+  xTaskCreate(vFilterTask, "Filter", FILTER_TASK_STACK_SIZE, NULL, configMAX_PRIORITIES - 2, NULL);
 }
