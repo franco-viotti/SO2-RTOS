@@ -24,21 +24,10 @@
  *
  */
 
-#ifndef __TZ_DEMO_H__
-#define __TZ_DEMO_H__
+#ifndef BLOCK_Q_H
+#define BLOCK_Q_H
 
-/**
- * @brief Creates all the tasks for TZ demo.
- *
- * The Trust Zone (TZ) demo creates an unprivileged task which calls a secure
- * side function and passes a pointer to a callback function. The secure side
- * function does two things:
- * 1. It calls the provided callback function. The callback function increments
- * a counter.
- * 2. It increments a counter and returns the incremented value.
- * After the secure function call finishes, it verifies that both the counters
- * are incremented.
- */
-void vStartTZDemo( void );
+void vStartBlockingQueueTasks( UBaseType_t uxPriority );
+BaseType_t xAreBlockingQueuesStillRunning( void );
 
-#endif /* __TZ_DEMO_H__ */
+#endif

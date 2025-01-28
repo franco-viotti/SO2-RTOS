@@ -65,7 +65,7 @@
 
 
 /* Environment includes. */
-#include "DriverLib.h"
+#include "drivers/DriverLib.h"
 
 /* Scheduler includes. */
 #include "FreeRTOS.h"

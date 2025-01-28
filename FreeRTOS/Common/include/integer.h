@@ -24,35 +24,10 @@
  *
  */
 
-#include <arm_cmse.h>
-#include "nsc_functions.h"
-#include "secure_port_macros.h"
+#ifndef INTEGER_TASKS_H
+#define INTEGER_TASKS_H
 
-/**
- * @brief Counter returned from NSCFunction.
- */
-static uint32_t ulSecureCounter = 0;
+void vStartIntegerMathTasks( UBaseType_t uxPriority );
+BaseType_t xAreIntegerMathsTaskStillRunning( void );
 
-/**
- * @brief typedef for non-secure callback.
- */
-typedef void ( *NonSecureCallback_t )( void ) __attribute__( ( cmse_nonsecure_call ) );
-/*-----------------------------------------------------------*/
-
-secureportNON_SECURE_CALLABLE uint32_t NSCFunction( Callback_t pxCallback )
-{
-    NonSecureCallback_t pxNonSecureCallback;
-
-    /* Return function pointer with cleared LSB. */
-    pxNonSecureCallback = ( NonSecureCallback_t ) cmse_nsfptr_create( pxCallback );
-
-    /* Invoke the supplied callback. */
-    pxNonSecureCallback();
-
-    /* Increment the secure side counter. */
-    ulSecureCounter += 1;
-
-    /* Return the secure side counter. */
-    return ulSecureCounter;
-}
-/*-----------------------------------------------------------*/
+#endif
