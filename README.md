@@ -39,4 +39,3 @@ Este proyecto está bajo la Licencia Apache 2.0. Consulte el archivo [LICENSE](.
 
 ### Informe
 El informe del trabajo práctico se encuentra en el archivo [report](./report.pdf).
-```
