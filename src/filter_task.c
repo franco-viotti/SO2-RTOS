@@ -84,19 +84,20 @@ static void vFilterTask(void *pvParameters) {
       filteredData.time_ms = (xTaskGetTickCount() - startTime) * portTICK_PERIOD_MS;
 
       // Enviar a display
+      // Si no hay espacio en la cola, la tarea se bloquea
       if (xQueueSend(xFilteredTempQueue, &filteredData, portMAX_DELAY) != pdPASS) {
         UARTSendError("Fallo al enviar a cola");
       }
 
       // Mostrar resultado
       // TODO: descomentar para mostrar el filtrado con la cantidad de muestras
-      UARTSend("Filtrado (");
+      /*UARTSend("Filtrado (");
       int_to_string(samplesCount, str);
       UARTSend(str);
       UARTSend(" muestras): ");
       int_to_string(average, str);
       UARTSend(str);
-      UARTSend("°C\r\n");
+      UARTSend("°C\r\n");*/
     }
     else
       UARTSendError("Error al recibir de la cola del sensor");

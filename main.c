@@ -49,7 +49,7 @@ int main(void) {
   vWelcomeMessage();
 
   /* Crear la cola del sensor al filtro pasa bajos */
-  xTemperatureQueue = xQueueCreate(1, sizeof(int));
+  xTemperatureQueue = xQueueCreate(10, sizeof(int));
 
   /* Crear la cola del filtro al display */
   xFilteredTempQueue = xQueueCreate(10, sizeof(TempData_t));

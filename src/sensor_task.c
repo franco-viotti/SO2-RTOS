@@ -13,6 +13,7 @@ static void vSensorTask(void *pvParameters) {
   for(;;) {
     temperature = TEMP_MIN + (rand() % (TEMP_MAX - TEMP_MIN + 1));
 
+    // Si no hay espacio en la cola, la tarea se bloquea
     if(xQueueSend(xTemperatureQueue, &temperature, portMAX_DELAY) != pdPASS)
       UARTSendError("Fallo al enviar a cola");
     
