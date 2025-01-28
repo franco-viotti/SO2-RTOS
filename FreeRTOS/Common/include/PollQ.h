@@ -24,27 +24,10 @@
  *
  */
 
-#ifndef __NSC_FUNCTIONS_H__
-#define __NSC_FUNCTIONS_H__
+#ifndef POLLED_Q_H
+#define POLLED_Q_H
 
-#include <stdint.h>
+void vStartPolledQueueTasks( UBaseType_t uxPriority );
+BaseType_t xArePollingQueuesStillRunning( void );
 
-/**
- * @brief Callback function pointer definition.
- */
-typedef void ( * Callback_t ) ( void );
-
-/**
- * @brief Invokes the supplied callback which is on the non-secure side.
- *
- * Returns a number which is one more than the value returned in previous
- * invocation of this function. Initial invocation returns 1.
- *
- * @param pxCallback[in] The callback to invoke.
- *
- * @return A number which is one more than the value returned in previous
- * invocation of this function.
- */
-uint32_t NSCFunction( Callback_t pxCallback );
-
-#endif /* __NSC_FUNCTIONS_H__ */
+#endif

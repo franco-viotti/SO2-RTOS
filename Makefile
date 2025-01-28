@@ -25,12 +25,12 @@
 
 include makedefs
 
-RTOS_SOURCE_DIR=../../Source
-DEMO_SOURCE_DIR=../Common/Minimal
+RTOS_SOURCE_DIR=src
+DEMO_SOURCE_DIR=FreeRTOS/Common/Minimal
 
-CFLAGS+=-I hw_include -I . -I ${RTOS_SOURCE_DIR}/include -I ${RTOS_SOURCE_DIR}/portable/GCC/ARM_CM3 -I ../Common/include -D GCC_ARMCM3_LM3S102 -D inline=
+CFLAGS+=-I hw_include -I . -I include -I ${RTOS_SOURCE_DIR}/include -I ${RTOS_SOURCE_DIR}/portable/GCC/ARM_CM3 -I ../Common/include -I FreeRTOS/Source/portable/GCC/ARM_CM3 -I drivers -D GCC_ARMCM3_LM3S102 -D inline=
 
-VPATH=${RTOS_SOURCE_DIR}:${RTOS_SOURCE_DIR}/portable/MemMang:${RTOS_SOURCE_DIR}/portable/GCC/ARM_CM3:${DEMO_SOURCE_DIR}:init:hw_include
+VPATH=${RTOS_SOURCE_DIR}:${RTOS_SOURCE_DIR}/portable/MemMang:${RTOS_SOURCE_DIR}/portable/GCC/ARM_CM3:${DEMO_SOURCE_DIR}:init:hw_include:drivers:FreeRTOS/Source:FreeRTOS/Source/portable/MemMang
 
 OBJS=${COMPILER}/main.o	\
     ${COMPILER}/list.o \
@@ -49,7 +49,8 @@ OBJS=${COMPILER}/main.o	\
 
 INIT_OBJS= ${COMPILER}/startup.o
 
-LIBS= hw_include/libdriver.a
+# LIBS= hw_include/libdriver.a
+LIBS= drivers/libdriver.a
 
 
 #
@@ -80,9 +81,3 @@ ENTRY_RTOSDemo=ResetISR
 # Include the automatically generated dependency files.
 #
 -include ${wildcard ${COMPILER}/*.d} __dummy__
-
-
-	 
-
-
-
